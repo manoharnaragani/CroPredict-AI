@@ -127,52 +127,54 @@ export const WeatherTab: React.FC<WeatherTabProps> = ({
       <div className="bg-white dark:bg-stone-900 rounded-xl shadow-xs border border-stone-200 dark:border-stone-800 p-4 transition-colors">
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
           {/* Search Input */}
-          <div className="relative flex-1">
+          <div className="flex-1">
             <label htmlFor="village-search" className="sr-only">
               {t('searchPlaceholder', lang)}
             </label>
+            {/* Search Input Wrapper */}
             <div className="relative">
-              <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 id="village-search"
                 type="text"
                 placeholder={t('searchPlaceholder', lang)}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:bg-white dark:focus:bg-stone-800 text-stone-900 dark:text-stone-100"
+                className="w-full pl-10 pr-9 py-2 text-sm bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:bg-white dark:focus:bg-stone-800 text-stone-900 dark:text-stone-100"
               />
               {isSearching && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                   <RefreshCw className="w-4 h-4 text-emerald-600 animate-spin" />
                 </div>
               )}
+
+              {/* Search Results Dropdown */}
+              {searchResults.length > 0 && (
+                <ul className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg z-20 max-h-60 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-700">
+                  {searchResults.map((res, i) => (
+                    <li key={`${res.latitude}-${res.longitude}-${i}`}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectSearchResult(res)}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-emerald-50 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 flex items-center justify-between gap-2 cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2">
+                          <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="font-medium">{res.name}</span>
+                          {res.admin1 && (
+                            <span className="text-xs text-stone-500 dark:text-stone-400">({res.admin1})</span>
+                          )}
+                        </span>
+                        <span className="text-[11px] text-stone-400">
+                          {res.latitude.toFixed(2)}°, {res.longitude.toFixed(2)}°
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
-            {/* Search Results Dropdown */}
-            {searchResults.length > 0 && (
-              <ul className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg z-20 max-h-60 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-700">
-                {searchResults.map((res, i) => (
-                  <li key={`${res.latitude}-${res.longitude}-${i}`}>
-                    <button
-                      type="button"
-                      onClick={() => handleSelectSearchResult(res)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-emerald-50 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 flex items-center justify-between gap-2"
-                    >
-                      <span className="flex items-center gap-2">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span className="font-medium">{res.name}</span>
-                        {res.admin1 && (
-                          <span className="text-xs text-stone-500 dark:text-stone-400">({res.admin1})</span>
-                        )}
-                      </span>
-                      <span className="text-[11px] text-stone-400">
-                        {res.latitude.toFixed(2)}°, {res.longitude.toFixed(2)}°
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
             {/* "Use current location" button directly below Weather search */}
             <div className="mt-2.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <button

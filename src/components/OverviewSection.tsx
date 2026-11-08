@@ -199,46 +199,50 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
           <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-xs border border-stone-200 dark:border-stone-800 p-4 sm:p-5 space-y-4 transition-colors">
             {/* Search & Location Bar */}
             <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-between">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder={t('searchPlaceholder', lang)}
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-emerald-500 text-stone-900 dark:text-stone-100"
-                />
-                {isSearching && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <RefreshCw className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
-                  </div>
-                )}
+              <div className="flex-1">
+                {/* Search Input Wrapper */}
+                <div className="relative">
+                  <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder={t('searchPlaceholder', lang)}
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-9 py-2 text-xs sm:text-sm bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-emerald-500 text-stone-900 dark:text-stone-100"
+                  />
+                  {isSearching && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <RefreshCw className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
+                    </div>
+                  )}
 
-                {/* Dropdown Results */}
-                {searchResults.length > 0 && (
-                  <ul className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg z-20 max-h-56 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-700">
-                    {searchResults.map((res, i) => (
-                      <li key={`${res.latitude}-${res.longitude}-${i}`}>
-                        <button
-                          type="button"
-                          onClick={() => handleSelectSearchResult(res)}
-                          className="w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 flex items-center justify-between gap-2"
-                        >
-                          <span className="flex items-center gap-1.5 truncate">
-                            <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            <span className="font-semibold">{res.name}</span>
-                            {res.admin1 && (
-                              <span className="text-stone-400 truncate">({res.admin1})</span>
-                            )}
-                          </span>
-                          <span className="text-[10px] text-stone-400 shrink-0">
-                            {res.latitude.toFixed(2)}°, {res.longitude.toFixed(2)}°
-                          </span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                  {/* Dropdown Results */}
+                  {searchResults.length > 0 && (
+                    <ul className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg z-20 max-h-56 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-700">
+                      {searchResults.map((res, i) => (
+                        <li key={`${res.latitude}-${res.longitude}-${i}`}>
+                          <button
+                            type="button"
+                            onClick={() => handleSelectSearchResult(res)}
+                            className="w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 flex items-center justify-between gap-2 cursor-pointer"
+                          >
+                            <span className="flex items-center gap-1.5 truncate">
+                              <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span className="font-semibold">{res.name}</span>
+                              {res.admin1 && (
+                                <span className="text-stone-400 truncate">({res.admin1})</span>
+                              )}
+                            </span>
+                            <span className="text-[10px] text-stone-400 shrink-0">
+                              {res.latitude.toFixed(2)}°, {res.longitude.toFixed(2)}°
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
                 {/* "Use current location" button directly below Weather search */}
                 <div className="mt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <button
