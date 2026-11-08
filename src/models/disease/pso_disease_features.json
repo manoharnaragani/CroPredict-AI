@@ -34,34 +34,24 @@
     "crop_growth_stage_code"
   ],
   "selectedFeatures": [
-    "mean_hue",
-    "mean_saturation",
-    "green_chlorophyll_ratio",
     "brown_necrosis_ratio",
-    "yellow_chlorosis_ratio",
-    "glcm_contrast",
-    "lesion_count_per_cm2",
+    "glcm_homogeneity",
     "mean_lesion_eccentricity",
+    "spatial_fft_high_freq",
     "vein_thickening_index",
     "concentric_ring_score",
     "water_soaked_margin_score",
-    "leaf_edge_curl_angle",
     "exg_vegetation_index"
   ],
   "selectedIndices": [
-    0,
-    1,
-    3,
     4,
-    5,
-    6,
-    10,
+    7,
     11,
+    15,
     16,
     17,
     18,
-    19,
     22
   ],
-  "sparsityRatio": 0.594
+  "sparsityRatio": 0.75
 }

@@ -5,6 +5,8 @@
  */
 
 import psoYieldFeatures from '../models/yield/pso_yield_features.json';
+import yieldModelWeights from '../models/yield/yield_model_weights.json';
+import yieldScalerParams from '../models/yield/scaler_params.json';
 import yieldMetadata from '../models/yield/model_metadata.json';
 import diseaseMetadata from '../models/disease/model_metadata.json';
 import psoDiseaseFeatures from '../models/disease/pso_disease_features.json';
@@ -83,34 +85,133 @@ export function handlePredictYield(body: any) {
     'historical_3yr_trend',
   ];
 
-  // Normalized agronomic response factors (BiGRU latent dynamics)
-  const nFactor = (soil_N - 300) / 150;
-  const pFactor = (soil_P - 18) / 20;
-  const kFactor = (soil_K - 200) / 120;
-  const ndviFactor = (ndvi - 0.55) / 0.25;
-  const rainFactor = Math.sin((rainfall_mm / 1000) * Math.PI) * 0.14;
-  const irrigFactor = (irrigation_index - 0.5) * 0.12;
-  const phFactor = -Math.abs(soil_pH - 6.8) * 0.08;
-  const tempFactor = -Math.max(0, avg_temperature - 32) * 0.03;
-  const moistFactor = (soil_moisture_pct - 30) / 20 * 0.05;
+  // Candidate feature vector (24 features)
+  const candidateFeatures: number[] = [
+    soil_pH,
+    soil_N,
+    soil_P,
+    soil_K,
+    0.65, // soil_organic_carbon
+    soil_moisture_pct,
+    avg_temperature,
+    11.0, // diurnal_temp_range
+    rainfall_mm,
+    65.0, // relative_humidity_pct
+    18.5, // solar_radiation_mj
+    1850.0, // growing_degree_days
+    ndvi,
+    ndvi * 0.82, // sentinel2_evi
+    0.18, // sentinel2_ndwi
+    farmAreaAcres * 0.404686, // area_harvested_ha
+    irrigation_index,
+    soil_N * 0.55, // fertilizer_intensity_kg_ha
+    1.02, // historical_3yr_trend
+    0.12, // pest_pressure_index
+    1, // consecutive_dry_spells
+    350.0, // elevation_m
+    0, // monsoon_onset_anomaly_days
+    8.0, // heat_stress_hours
+  ];
 
-  const multiplier = Math.max(
-    0.60,
-    Math.min(
-      1.45,
-      1.0 +
-        0.12 * nFactor +
-        0.08 * pFactor +
-        0.06 * kFactor +
-        0.14 * ndviFactor +
-        rainFactor +
-        irrigFactor +
-        phFactor +
-        tempFactor +
-        moistFactor
-    )
-  );
+  // Genuine CNN-BiGRU forward pass using saved trained weights
+  const inFeatures = (yieldModelWeights as any).in_features || 24;
+  const convFilters = (yieldModelWeights as any).conv_filters || 4;
+  const gruHidden = (yieldModelWeights as any).gru_hidden || 6;
+  const selectedIndices: number[] = (psoYieldFeatures as any).selectedIndices || [];
 
+  const means: number[] = (yieldScalerParams as any).means;
+  const stds: number[] = (yieldScalerParams as any).stds;
+
+  // Normalized inputs (with PSO-NSPSO mask applied)
+  const normX: number[] = new Array(inFeatures).fill(0);
+  for (let j = 0; j < inFeatures; j++) {
+    if (selectedIndices.length === 0 || selectedIndices.includes(j)) {
+      normX[j] = (candidateFeatures[j] - means[j]) / (stds[j] || 1);
+    }
+  }
+
+  // 1D Convolution
+  const padded = [0, ...normX, 0];
+  const convOut: number[][] = [];
+  const convW = (yieldModelWeights as any).conv_w;
+  const convB = (yieldModelWeights as any).conv_b;
+
+  for (let t = 0; t < inFeatures; t++) {
+    const fVals: number[] = [];
+    for (let f = 0; f < convFilters; f++) {
+      const v = convB[f] + convW[f][0] * padded[t] + convW[f][1] * padded[t + 1] + convW[f][2] * padded[t + 2];
+      fVals.push(Math.max(0, v)); // ReLU
+    }
+    convOut.push(fVals);
+  }
+
+  // BiGRU Forward
+  let hF = new Array(gruHidden).fill(0);
+  for (let t = 0; t < inFeatures; t++) {
+    const ct = convOut[t];
+    const newHf = new Array(gruHidden).fill(0);
+    for (let i = 0; i < gruHidden; i++) {
+      let zin = (yieldModelWeights as any).gru_f_bz[i];
+      for (let k = 0; k < convFilters; k++) zin += (yieldModelWeights as any).gru_f_wz[i][k] * ct[k];
+      for (let k = 0; k < gruHidden; k++) zin += (yieldModelWeights as any).gru_f_uz[i][k] * hF[k];
+      const zt = 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, zin))));
+
+      let rin = (yieldModelWeights as any).gru_f_br[i];
+      for (let k = 0; k < convFilters; k++) rin += (yieldModelWeights as any).gru_f_wr[i][k] * ct[k];
+      for (let k = 0; k < gruHidden; k++) rin += (yieldModelWeights as any).gru_f_ur[i][k] * hF[k];
+      const rt = 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, rin))));
+
+      let hin = (yieldModelWeights as any).gru_f_bh[i];
+      for (let k = 0; k < convFilters; k++) hin += (yieldModelWeights as any).gru_f_wh[i][k] * ct[k];
+      for (let k = 0; k < gruHidden; k++) hin += (yieldModelWeights as any).gru_f_uh[i][k] * (rt * hF[k]);
+      const htilde = Math.tanh(Math.max(-15, Math.min(15, hin)));
+
+      newHf[i] = (1 - zt) * hF[i] + zt * htilde;
+    }
+    hF = newHf;
+  }
+
+  // BiGRU Backward
+  let hB = new Array(gruHidden).fill(0);
+  for (let t = inFeatures - 1; t >= 0; t--) {
+    const ct = convOut[t];
+    const newHb = new Array(gruHidden).fill(0);
+    for (let i = 0; i < gruHidden; i++) {
+      let zin = (yieldModelWeights as any).gru_b_bz[i];
+      for (let k = 0; k < convFilters; k++) zin += (yieldModelWeights as any).gru_b_wz[i][k] * ct[k];
+      for (let k = 0; k < gruHidden; k++) zin += (yieldModelWeights as any).gru_b_uz[i][k] * hB[k];
+      const zt = 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, zin))));
+
+      let rin = (yieldModelWeights as any).gru_b_br[i];
+      for (let k = 0; k < convFilters; k++) rin += (yieldModelWeights as any).gru_b_wr[i][k] * ct[k];
+      for (let k = 0; k < gruHidden; k++) rin += (yieldModelWeights as any).gru_b_ur[i][k] * hB[k];
+      const rt = 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, rin))));
+
+      let hin = (yieldModelWeights as any).gru_b_bh[i];
+      for (let k = 0; k < convFilters; k++) hin += (yieldModelWeights as any).gru_b_wh[i][k] * ct[k];
+      for (let k = 0; k < gruHidden; k++) hin += (yieldModelWeights as any).gru_b_uh[i][k] * (rt * hB[k]);
+      const htilde = Math.tanh(Math.max(-15, Math.min(15, hin)));
+
+      newHb[i] = (1 - zt) * hB[i] + zt * htilde;
+    }
+    hB = newHb;
+  }
+
+  const latent = [...hF, ...hB];
+  let delta = (yieldModelWeights as any).dense_b || 0;
+  const denseW = (yieldModelWeights as any).dense_w || [];
+  for (let i = 0; i < latent.length; i++) {
+    delta += (denseW[i] || 0) * latent[i];
+  }
+
+  const projW = (yieldModelWeights as any).proj_w || [];
+  for (let j = 0; j < inFeatures; j++) {
+    if (selectedIndices.length === 0 || selectedIndices.includes(j)) {
+      delta += (projW[j] || 0) * normX[j];
+    }
+  }
+
+  const multiplier = Math.max(0.55, Math.min(1.45, 1.0 + delta));
   const predictedYieldTonnesPerHa = Math.round(baseYield * multiplier * 100) / 100;
   const lowerCi = Math.round(predictedYieldTonnesPerHa * 0.94 * 100) / 100;
   const upperCi = Math.round(predictedYieldTonnesPerHa * 1.06 * 100) / 100;

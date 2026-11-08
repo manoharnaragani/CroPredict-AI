@@ -1,12 +1,13 @@
 {
-  "lastRunTimestamp": "2026-11-08 09:08:08",
+  "lastRunTimestamp": "2026-11-08 10:02:39",
   "yieldModel": {
     "name": "CNN-BiGRU + PSO-NSPSO Crop Yield Regressor",
     "targetUnit": "tonnes/hectare",
     "sampleCounts": {
-      "total": 1200,
-      "train": 960,
-      "heldOutTest": 240,
+      "total": 716,
+      "train": 585,
+      "val": 56,
+      "heldOutTest": 75,
       "officialGovernmentRecords": 94
     },
     "supportedCrops": [
@@ -67,57 +68,44 @@
     ],
     "selectedFeatures": [
       "soil_N",
-      "soil_P",
-      "soil_K",
       "soil_moisture_pct",
       "avg_temperature",
       "season_rainfall_mm",
+      "relative_humidity_pct",
       "sentinel2_ndvi",
+      "sentinel2_ndwi",
+      "area_harvested_ha",
       "irrigation_index",
-      "fertilizer_intensity_kg_ha",
-      "historical_3yr_trend"
+      "historical_3yr_trend",
+      "pest_pressure_index",
+      "heat_stress_hours"
     ],
-    "retainedCount": 10,
+    "retainedCount": 12,
     "totalCount": 24,
-    "redundancyReductionPct": 58.3,
+    "redundancyReductionPct": 50.0,
     "heldOutPerformance": {
       "before": {
-        "mae": 0.302,
-        "rmse": 0.464,
-        "r2": 0.848
+        "mae": 0.659,
+        "rmse": 0.798,
+        "r2": 0.483
       },
       "after": {
-        "mae": 0.26,
-        "rmse": 0.429,
-        "r2": 0.87
+        "mae": 0.511,
+        "rmse": 0.685,
+        "r2": 0.618
       },
-      "maeImprovementPct": 13.9
+      "maeImprovementPct": 22.5
     },
     "paretoFrontSample": [
       {
-        "selectedCount": 10,
-        "mae": 0.26,
-        "sparsity": 0.583
+        "selectedCount": 24,
+        "mae": 0.651,
+        "sparsity": 0.0
       },
       {
-        "selectedCount": 9,
-        "mae": 0.28,
-        "sparsity": 0.625
-      },
-      {
-        "selectedCount": 8,
-        "mae": 0.31,
-        "sparsity": 0.667
-      },
-      {
-        "selectedCount": 7,
-        "mae": 0.35,
-        "sparsity": 0.708
-      },
-      {
-        "selectedCount": 6,
-        "mae": 0.4,
-        "sparsity": 0.75
+        "selectedCount": 24,
+        "mae": 0.645,
+        "sparsity": 0.0
       }
     ]
   },
@@ -125,17 +113,16 @@
     "name": "CNN-BiGRU + PSO-NSPSO Foliar Disease Classifier",
     "targetUnit": "Macro-F1 Score (%)",
     "sampleCounts": {
-      "total": 1000,
-      "train": 800,
-      "heldOutTest": 200,
-      "verifiedRicePilotTest": 72
+      "total": 720,
+      "train": 560,
+      "val": 60,
+      "heldOutTest": 100
     },
     "supportedCrops": [
       "Rice (Paddy) [Verified Pilot]",
       "Cotton [Preliminary Pilot]",
       "Tomato [Preliminary Pilot]"
     ],
-    "verifiedPilotScope": "Verified pilot covers three rice diseases (Rice Blast, Bacterial Leaf Blight, Brown Spot) + Healthy Rice. Broader coverage for other crops requires real labeled field photos.",
     "candidateFeatures": [
       "mean_hue",
       "mean_saturation",
@@ -171,59 +158,39 @@
       "crop_growth_stage_code"
     ],
     "selectedFeatures": [
-      "mean_hue",
-      "mean_saturation",
-      "green_chlorophyll_ratio",
       "brown_necrosis_ratio",
-      "yellow_chlorosis_ratio",
-      "glcm_contrast",
-      "lesion_count_per_cm2",
+      "glcm_homogeneity",
       "mean_lesion_eccentricity",
+      "spatial_fft_high_freq",
       "vein_thickening_index",
       "concentric_ring_score",
       "water_soaked_margin_score",
-      "leaf_edge_curl_angle",
       "exg_vegetation_index"
     ],
-    "retainedCount": 13,
+    "retainedCount": 8,
     "totalCount": 32,
-    "redundancyReductionPct": 59.4,
+    "redundancyReductionPct": 75.0,
     "heldOutPerformance": {
       "before": {
-        "macroF1Pct": 84.49,
-        "accuracyPct": 86.5,
-        "precisionPct": 92.55,
-        "recallPct": 87.8
+        "macroF1Pct": 100.0,
+        "accuracyPct": 100.0,
+        "precisionPct": 100.0,
+        "recallPct": 100.0
       },
       "after": {
-        "macroF1Pct": 84.49,
-        "accuracyPct": 86.5,
-        "precisionPct": 92.55,
-        "recallPct": 87.8,
-        "verifiedRiceCohortMacroF1": 93.31
+        "macroF1Pct": 100.0,
+        "accuracyPct": 100.0,
+        "precisionPct": 100.0,
+        "recallPct": 100.0,
+        "verifiedRiceCohortMacroF1": 100.0
       },
       "macroF1GainPct": 0.0
     },
     "paretoFrontSample": [
       {
-        "selectedCount": 13,
-        "macroF1Pct": 84.49,
-        "sparsity": 0.594
-      },
-      {
-        "selectedCount": 11,
-        "macroF1Pct": 82.39,
-        "sparsity": 0.656
-      },
-      {
-        "selectedCount": 9,
-        "macroF1Pct": 79.69,
-        "sparsity": 0.719
-      },
-      {
-        "selectedCount": 7,
-        "macroF1Pct": 75.99,
-        "sparsity": 0.781
+        "selectedCount": 32,
+        "macroF1Pct": 100.0,
+        "sparsity": 0.0
       }
     ]
   }

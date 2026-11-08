@@ -1,9 +1,10 @@
 {
   "pipeline": "CNN-BiGRU + PSO-NSPSO Yield Regressor",
-  "trainingDate": "2026-11-08 09:08:08",
-  "datasetSize": 1200,
-  "trainSamples": 960,
-  "heldOutTestSamples": 240,
+  "trainingDate": "2026-11-08 10:02:39",
+  "datasetSize": 716,
+  "trainSamples": 585,
+  "valSamples": 56,
+  "heldOutTestSamples": 75,
   "officialRecordsSource": "APY Portal (Ministry of Agriculture, GoI) & DES Karnataka (94 official records)",
   "supportedCrops": [
     "Rice (Paddy)",
@@ -37,17 +38,17 @@
   ],
   "metrics": {
     "beforeSelection": {
-      "maeTonnesPerHa": 0.302,
-      "rmse": 0.464,
-      "r2": 0.848,
+      "maeTonnesPerHa": 0.659,
+      "rmse": 0.798,
+      "r2": 0.483,
       "featuresCount": 24
     },
     "afterSelection": {
-      "maeTonnesPerHa": 0.26,
-      "rmse": 0.429,
-      "r2": 0.87,
-      "featuresCount": 10
+      "maeTonnesPerHa": 0.511,
+      "rmse": 0.685,
+      "r2": 0.618,
+      "featuresCount": 12
     },
-    "maeImprovementPct": 13.9
+    "maeImprovementPct": 22.5
   }
 }

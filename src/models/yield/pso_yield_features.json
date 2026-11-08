@@ -27,27 +27,31 @@
   ],
   "selectedFeatures": [
     "soil_N",
-    "soil_P",
-    "soil_K",
     "soil_moisture_pct",
     "avg_temperature",
     "season_rainfall_mm",
+    "relative_humidity_pct",
     "sentinel2_ndvi",
+    "sentinel2_ndwi",
+    "area_harvested_ha",
     "irrigation_index",
-    "fertilizer_intensity_kg_ha",
-    "historical_3yr_trend"
+    "historical_3yr_trend",
+    "pest_pressure_index",
+    "heat_stress_hours"
   ],
   "selectedIndices": [
     1,
-    2,
-    3,
     5,
     6,
     8,
+    9,
     12,
+    14,
+    15,
     16,
-    17,
-    18
+    18,
+    19,
+    23
   ],
-  "sparsityRatio": 0.583
+  "sparsityRatio": 0.5
 }
