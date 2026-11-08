@@ -15,24 +15,35 @@ export default function handler(req: ApiRequest, res: ApiResponse) {
     return res.status(200).end();
   }
 
-  const url = req.url || '';
+  try {
+    const url = req.url || '';
+    let body = req.body;
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch {
+        body = {};
+      }
+    }
+    const payload = req.method === 'GET' ? req.query : (body || {});
 
-  if (url.includes('/predict/yield')) {
-    const payload = req.method === 'GET' ? req.query : req.body;
-    return res.status(200).json(handlePredictYield(payload || {}));
-  }
+    if (url.includes('/predict/yield')) {
+      return res.status(200).json(handlePredictYield(payload || {}));
+    }
 
-  if (url.includes('/detect/disease')) {
-    const payload = req.method === 'GET' ? req.query : req.body;
-    return res.status(200).json(handleDetectDisease(payload || {}));
-  }
+    if (url.includes('/detect/disease')) {
+      return res.status(200).json(handleDetectDisease(payload || {}));
+    }
 
-  if (url.includes('/models/status')) {
-    return res.status(200).json(handleModelStatus());
-  }
+    if (url.includes('/models/status')) {
+      return res.status(200).json(handleModelStatus());
+    }
 
-  if (url.includes('/smart-optimization')) {
-    return res.status(200).json(handleSmartOptimization());
+    if (url.includes('/smart-optimization')) {
+      return res.status(200).json(handleSmartOptimization());
+    }
+  } catch (err: any) {
+    return res.status(500).json({ error: err?.message || 'Internal handler error' });
   }
 
   return res.status(200).json({

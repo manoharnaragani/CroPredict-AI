@@ -4,14 +4,17 @@
  * Implements calibrated CNN-BiGRU inference and foliar pathogen diagnosis.
  */
 
-import psoYieldFeatures from '../models/yield/pso_yield_features.json';
-import yieldModelWeights from '../models/yield/yield_model_weights.json';
-import yieldScalerParams from '../models/yield/scaler_params.json';
-import yieldMetadata from '../models/yield/model_metadata.json';
-import diseaseMetadata from '../models/disease/model_metadata.json';
-import psoDiseaseFeatures from '../models/disease/pso_disease_features.json';
-import smartOptData from '../models/optimization/smart_optimization_results.json';
-import { classifyLeafFromBiomarkers, LeafPixelFeatures } from '../utils/imageAnalysis.ts';
+import { createRequire } from 'node:module';
+import { classifyLeafFromBiomarkers, type LeafPixelFeatures } from '../utils/imageAnalysis.ts';
+
+const require = createRequire(import.meta.url);
+const psoYieldFeatures = require('../models/yield/pso_yield_features.json');
+const yieldModelWeights = require('../models/yield/yield_model_weights.json');
+const yieldScalerParams = require('../models/yield/scaler_params.json');
+const yieldMetadata = require('../models/yield/model_metadata.json');
+const diseaseMetadata = require('../models/disease/model_metadata.json');
+const psoDiseaseFeatures = require('../models/disease/pso_disease_features.json');
+const smartOptData = require('../models/optimization/smart_optimization_results.json');
 
 export const BASE_CROP_YIELDS: Record<string, number> = {
   'Rice (Paddy)': 4.10,

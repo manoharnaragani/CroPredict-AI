@@ -12,7 +12,15 @@ export default function handler(req: ApiRequest, res: ApiResponse) {
   }
 
   try {
-    const payload = req.method === 'GET' ? req.query : req.body;
+    let body = req.body;
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch {
+        body = {};
+      }
+    }
+    const payload = req.method === 'GET' ? req.query : (body || {});
     const result = handleDetectDisease(payload || {});
     return res.status(200).json(result);
   } catch (err: any) {
