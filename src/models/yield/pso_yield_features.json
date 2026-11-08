@@ -49,33 +49,5 @@
     17,
     18
   ],
-  "featureMask": [
-    0,
-    1,
-    1,
-    1,
-    0,
-    1,
-    1,
-    0,
-    1,
-    0,
-    0,
-    0,
-    1,
-    0,
-    0,
-    0,
-    1,
-    1,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0
-  ],
-  "retainedCount": 10,
-  "totalCount": 24,
-  "redundancyReductionRatePct": 58.3
+  "sparsityRatio": 0.583
 }

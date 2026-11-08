@@ -385,3 +385,110 @@ test('Fertilizer recommendations adjust for official Region packages (Punjab PAU
   assert.ok(unavailableNotice.explanation.includes('Official State Agricultural University package of practices is currently unavailable'));
 });
 
+test('Yield prediction computes farm area in acres, total production in tonnes (t/ha × acres × 0.404686), and reports 54-acre limit', async () => {
+  const { runLocalYieldInference } = await import('./modelInference.ts');
+
+  // 1. Standard smallholding (2.5 acres)
+  const input2_5Acres = {
+    crop: 'Rice (Paddy)',
+    region: 'Punjab',
+    season: 'Kharif',
+    soil_pH: 6.8,
+    soil_N: 380,
+    soil_P: 18,
+    soil_K: 210,
+    avg_temperature: 28.5,
+    rainfall_mm: 650,
+    ndvi: 0.68,
+    farmAreaAcres: 2.5,
+  };
+
+  const res2_5 = runLocalYieldInference(input2_5Acres);
+  assert.ok(res2_5.predictedYieldTonnesPerHa > 0);
+  assert.equal(res2_5.farmAreaAcres, 2.5);
+
+  // Exact formula verification: t/ha × acres × 0.404686
+  const expectedTonnes2_5 = Math.round(res2_5.predictedYieldTonnesPerHa * 2.5 * 0.404686 * 100) / 100;
+  assert.equal(res2_5.totalProductionTonnes, expectedTonnes2_5);
+  assert.equal(res2_5.acreageValidationNote, undefined, 'Smallholding should not trigger ceiling note');
+
+  // 2. Large commercial holding exceeding statutory ceiling (> 54 acres)
+  const input100Acres = {
+    ...input2_5Acres,
+    farmAreaAcres: 100,
+  };
+  const res100 = runLocalYieldInference(input100Acres);
+  const expectedTonnes100 = Math.round(res100.predictedYieldTonnesPerHa * 100 * 0.404686 * 100) / 100;
+  assert.equal(res100.totalProductionTonnes, expectedTonnes100);
+  assert.ok(res100.acreageValidationNote, 'Expected 54-acre statutory limit note for large holding');
+  assert.ok(res100.acreageValidationNote.includes('54-acre'));
+  assert.ok(res100.acreageValidationNote.includes('Land Ceiling Acts'));
+});
+
+test('Foliar pixel analysis uses dynamic confidence scores and gives identical output when image is renamed', async () => {
+  const { extractBiomarkersFromPixels, classifyLeafFromBiomarkers } = await import('./imageAnalysis.ts');
+
+  // 1. Non-leaf image test (e.g. blue sky / gray road with minimal vegetation)
+  const nonLeafData = new Uint8ClampedArray(64 * 64 * 4);
+  for (let i = 0; i < nonLeafData.length; i += 4) {
+    nonLeafData[i] = 120;     // R
+    nonLeafData[i + 1] = 130; // G
+    nonLeafData[i + 2] = 220; // B (Sky blue)
+    nonLeafData[i + 3] = 255;
+  }
+  const nonLeafFeatures = extractBiomarkersFromPixels(nonLeafData, 64, 64);
+  assert.equal(nonLeafFeatures.isFoliarLeaf, false);
+  const nonLeafResult = classifyLeafFromBiomarkers(nonLeafFeatures, 'Rice (Paddy)');
+  assert.equal(nonLeafResult.isFoliarLeaf, false);
+  assert.equal(nonLeafResult.isUncertain, true);
+  assert.ok(nonLeafResult.confidenceScore >= 0.72 && nonLeafResult.confidenceScore <= 0.99);
+
+  // 2. Healthy foliar leaf test
+  const healthyLeafData = new Uint8ClampedArray(64 * 64 * 4);
+  for (let i = 0; i < healthyLeafData.length; i += 4) {
+    healthyLeafData[i] = 30;      // R
+    healthyLeafData[i + 1] = 180; // G (Dominant green)
+    healthyLeafData[i + 2] = 40;  // B
+    healthyLeafData[i + 3] = 255;
+  }
+  const healthyFeatures = extractBiomarkersFromPixels(healthyLeafData, 64, 64);
+  assert.equal(healthyFeatures.isFoliarLeaf, true);
+  const healthyResult1 = classifyLeafFromBiomarkers(healthyFeatures, 'Rice (Paddy)');
+  assert.equal(healthyResult1.diseaseName, 'Healthy Rice Foliage');
+  assert.equal(healthyResult1.severity, 'Healthy');
+  assert.ok(healthyResult1.confidenceScore >= 0.76 && healthyResult1.confidenceScore <= 0.98);
+
+  // 3. Renamed copy test: renaming does not alter extracted pixels, yielding exact match
+  const renamedCopyResult = classifyLeafFromBiomarkers(healthyFeatures, 'Rice (Paddy)');
+  assert.equal(renamedCopyResult.diseaseName, healthyResult1.diseaseName);
+  assert.equal(renamedCopyResult.confidenceScore, healthyResult1.confidenceScore);
+  assert.equal(renamedCopyResult.severity, healthyResult1.severity);
+});
+
+test('Official crop dataset covers all 36 States and Union Territories with matching LGD records and district averages labeled', async () => {
+  const { parseCSV } = await import('./csv.ts');
+  const { DEFAULT_HISTORICAL_YIELD_CSV } = await import('../data/sampleYieldData.ts');
+  const { LGD_STATES_MASTER } = await import('../data/lgdData.ts');
+
+  const records = parseCSV(DEFAULT_HISTORICAL_YIELD_CSV);
+  assert.ok(records.length >= 90, `Expected at least 90 records, found ${records.length}`);
+
+  const coveredStates = new Set(records.map(r => r.state).filter(Boolean));
+  assert.equal(coveredStates.size, 36, `Expected exactly 36 States/UTs, found ${coveredStates.size}`);
+
+  // Verify all master LGD states are present in dataset
+  for (const masterState of LGD_STATES_MASTER) {
+    const isPresent = coveredStates.has(masterState.name);
+    assert.ok(isPresent, `Missing official record for state/UT: ${masterState.name} (LGD Code: ${masterState.code})`);
+  }
+
+  // Verify district average flag is present for urban/atoll Union Territories
+  const chandigarh = records.find(r => r.state === 'Chandigarh');
+  assert.ok(chandigarh);
+  assert.equal(chandigarh.isDistrictAverage, true);
+
+  const lakshadweep = records.find(r => r.state === 'Lakshadweep');
+  assert.ok(lakshadweep);
+  assert.equal(lakshadweep.isDistrictAverage, true);
+});
+

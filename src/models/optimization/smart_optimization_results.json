@@ -1,5 +1,5 @@
 {
-  "lastRunTimestamp": "2026-11-08 06:27:23",
+  "lastRunTimestamp": "2026-11-08 08:29:38",
   "yieldModel": {
     "name": "CNN-BiGRU + PSO-NSPSO Crop Yield Regressor",
     "targetUnit": "tonnes/hectare",
@@ -127,7 +127,7 @@
       "total": 1000,
       "train": 800,
       "heldOutTest": 200,
-      "verifiedRicePilotTest": 80
+      "verifiedRicePilotTest": 78
     },
     "supportedCrops": [
       "Rice (Paddy) [Verified Pilot]",
@@ -210,19 +210,19 @@
         "sparsity": 0.594
       },
       {
-        "selectedCount": 12,
-        "macroF1Pct": 54.6,
-        "sparsity": 0.625
+        "selectedCount": 11,
+        "macroF1Pct": 53.36,
+        "sparsity": 0.656
       },
       {
-        "selectedCount": 10,
-        "macroF1Pct": 53.4,
-        "sparsity": 0.688
+        "selectedCount": 9,
+        "macroF1Pct": 50.66,
+        "sparsity": 0.719
       },
       {
-        "selectedCount": 8,
-        "macroF1Pct": 51.2,
-        "sparsity": 0.75
+        "selectedCount": 7,
+        "macroF1Pct": 46.96,
+        "sparsity": 0.781
       }
     ]
   }

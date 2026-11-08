@@ -189,6 +189,11 @@ export interface YieldPredictionResult {
   cnnBigruLatentDim: number;
   psoOptimalFitness: number;
   timestamp: string;
+  farmAreaAcres?: number;
+  totalProductionTonnes?: number;
+  totalProductionConfidenceInterval?: [number, number];
+  yieldKgPerHa?: number;
+  acreageValidationNote?: string;
   modelMetadata?: {
     modelName: string;
     framework: string;

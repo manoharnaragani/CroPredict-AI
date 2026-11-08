@@ -13,6 +13,8 @@ import {
   Server,
   FileCode,
   CheckCircle2,
+  AlertTriangle,
+  Scale,
 } from 'lucide-react';
 import { LanguageCode, ModelEndpointConfig, SoilData, WeatherData, YieldPredictionResult } from '../types/index.ts';
 import { executeYieldPipeline, YIELD_MODEL_REQUIREMENTS } from '../utils/pipeline.ts';
@@ -41,6 +43,7 @@ export const CropYieldPredictionTab: React.FC<CropYieldPredictionTabProps> = ({
   const [crop, setCrop] = useState<string>('Rice (Paddy)');
   const [region, setRegion] = useState<string>('Punjab');
   const [season, setSeason] = useState<string>('Kharif');
+  const [farmAreaAcres, setFarmAreaAcres] = useState<number>(2.5);
   const [soilPH, setSoilPH] = useState<number>(currentSoil.pH || 6.8);
   const [soilN, setSoilN] = useState<number>(currentSoil.nitrogen || 380);
   const [soilP, setSoilP] = useState<number>(currentSoil.phosphorus || 18);
@@ -76,6 +79,7 @@ export const CropYieldPredictionTab: React.FC<CropYieldPredictionTabProps> = ({
         avg_temperature: temperature,
         rainfall_mm: rainfallMm,
         ndvi,
+        farmAreaAcres,
       },
       updated => {
         onUpdateConfig?.(updated);
@@ -348,11 +352,53 @@ export const CropYieldPredictionTab: React.FC<CropYieldPredictionTabProps> = ({
                   step="0.1"
                   min="4.0"
                   max="9.5"
-                  value={soilPH}
-                  onChange={e => setSoilPH(parseFloat(e.target.value) || 7.0)}
                   className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:ring-2 focus:ring-emerald-500 text-stone-800 dark:text-stone-100"
                 />
               </div>
+            </div>
+
+            {/* Farm Operational Area (Acres) & Validation */}
+            <div className="bg-stone-50 dark:bg-stone-800/60 p-3 rounded-lg border border-stone-200 dark:border-stone-700/80 space-y-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300">
+                    Farm Operational Area (Acres)
+                  </label>
+                  <span className="text-[11px] text-stone-500 dark:text-stone-400">
+                    Total harvest calculated as: <code className="font-mono text-emerald-700 dark:text-emerald-400">t/ha × acres × 0.404686</code>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative w-28 sm:w-32">
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0.1"
+                      max="5000"
+                      value={farmAreaAcres}
+                      onChange={e => setFarmAreaAcres(Math.max(0.1, parseFloat(e.target.value) || 1.0))}
+                      className="w-full px-2.5 py-1.5 text-xs sm:text-sm font-bold bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-600 rounded-lg focus:ring-2 focus:ring-emerald-500 text-stone-900 dark:text-white"
+                    />
+                    <span className="absolute right-2 top-2 text-[10px] font-semibold text-stone-400">
+                      Acres
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-stone-500 dark:text-stone-400 whitespace-nowrap">
+                    ≈ {(farmAreaAcres * 0.404686).toFixed(2)} Ha
+                  </span>
+                </div>
+              </div>
+
+              {/* Data-supported Statutory Limit Notice (Agricultural Census / Land Ceiling Act 54 Acres) */}
+              {farmAreaAcres > 54 && (
+                <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded-md text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Agricultural Land Ceiling Notice (&gt; 54 Acres):</span>{' '}
+                    This operational holding exceeds the statutory 54-acre limit defined under Indian Land Ceiling Acts and the Agricultural Census for single-ownership non-irrigated dry holdings. Production estimates are calculated proportionally for commercial or collective holdings.
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Soil N-P-K */}
@@ -513,28 +559,88 @@ export const CropYieldPredictionTab: React.FC<CropYieldPredictionTabProps> = ({
                 </span>
               </div>
 
-              {/* Main Predicted Yield in Tonnes/Hectare */}
-              <div className="bg-gradient-to-br from-emerald-50 to-green-100/70 dark:from-emerald-950/60 dark:to-stone-900 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 text-center">
-                <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider">
-                  {t('predictedYield', lang)}
-                </span>
-                <div className="mt-1 flex items-baseline justify-center gap-1.5">
-                  <span className="text-4xl sm:text-5xl font-black text-emerald-900 dark:text-white">
-                    {executionResult.predictedYieldTonnesPerHa}
-                  </span>
-                  <span className="text-base font-bold text-emerald-700 dark:text-emerald-400">
-                    {t('tonnesPerHa', lang)}
-                  </span>
-                </div>
-                {executionResult.confidenceInterval && (
-                  <div className="mt-2 inline-flex items-center gap-2 px-2.5 py-1 bg-white/80 dark:bg-stone-800 rounded-full text-xs font-medium text-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                    <span>{t('confidenceInterval', lang)}:</span>
-                    <span className="font-bold">
-                      {executionResult.confidenceInterval[0]} - {executionResult.confidenceInterval[1]} t/ha
+              {/* Dual Metrics: Yield per Hectare & Total Farm Production in Tonnes */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* 1. Unit Yield (Tonnes/Ha & Kg/Ha) */}
+                <div className="bg-gradient-to-br from-emerald-50 to-green-100/70 dark:from-emerald-950/60 dark:to-stone-900 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 text-center flex flex-col justify-between">
+                  <div>
+                    <span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider block">
+                      {t('predictedYield', lang)}
+                    </span>
+                    <div className="mt-1 flex items-baseline justify-center gap-1.5">
+                      <span className="text-3xl sm:text-4xl font-black text-emerald-900 dark:text-white">
+                        {executionResult.predictedYieldTonnesPerHa}
+                      </span>
+                      <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                        {t('tonnesPerHa', lang)}
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono text-emerald-700 dark:text-emerald-300">
+                      ≈ {executionResult.yieldKgPerHa ?? Math.round(executionResult.predictedYieldTonnesPerHa * 1000)} kg/ha
                     </span>
                   </div>
-                )}
+                  {executionResult.confidenceInterval && (
+                    <div className="mt-2 inline-flex items-center justify-center gap-1 px-2 py-0.5 bg-white/80 dark:bg-stone-800 rounded-full text-[11px] font-medium text-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                      <span>CI:</span>
+                      <span className="font-bold">
+                        {executionResult.confidenceInterval[0]} - {executionResult.confidenceInterval[1]} t/ha
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Total Farm Production (Tonnes) */}
+                <div className="bg-gradient-to-br from-teal-50 to-emerald-100/70 dark:from-teal-950/60 dark:to-stone-900 border border-teal-200 dark:border-teal-800 rounded-xl p-4 text-center flex flex-col justify-between">
+                  <div>
+                    <span className="text-[11px] font-semibold text-teal-800 dark:text-teal-400 uppercase tracking-wider block">
+                      Total Farm Harvest
+                    </span>
+                    <div className="mt-1 flex items-baseline justify-center gap-1.5">
+                      <span className="text-3xl sm:text-4xl font-black text-teal-900 dark:text-white">
+                        {executionResult.totalProductionTonnes ??
+                          Math.round(executionResult.predictedYieldTonnesPerHa * farmAreaAcres * 0.404686 * 100) / 100}
+                      </span>
+                      <span className="text-sm font-bold text-teal-700 dark:text-teal-400">
+                        Tonnes
+                      </span>
+                    </div>
+                    <span className="text-xs text-teal-700 dark:text-teal-300">
+                      Across {farmAreaAcres} Acres ({(farmAreaAcres * 0.404686).toFixed(2)} Ha)
+                    </span>
+                  </div>
+                  <div className="mt-2 inline-flex items-center justify-center gap-1 px-2 py-0.5 bg-white/80 dark:bg-stone-800 rounded-full text-[11px] font-medium text-teal-900 dark:text-teal-200 border border-teal-200 dark:border-teal-800">
+                    <span>CI:</span>
+                    <span className="font-bold">
+                      {executionResult.totalProductionConfidenceInterval
+                        ? `${executionResult.totalProductionConfidenceInterval[0]} - ${executionResult.totalProductionConfidenceInterval[1]} T`
+                        : `${Math.round(executionResult.confidenceInterval[0] * farmAreaAcres * 0.404686 * 100) / 100} - ${Math.round(executionResult.confidenceInterval[1] * farmAreaAcres * 0.404686 * 100) / 100} T`}
+                    </span>
+                  </div>
+                </div>
               </div>
+
+              {/* Exact Formula Banner */}
+              <div className="bg-stone-50 dark:bg-stone-800/80 px-3 py-2 rounded-lg border border-stone-200 dark:border-stone-700 text-xs flex items-center justify-between text-stone-600 dark:text-stone-300">
+                <span className="flex items-center gap-1.5 font-semibold">
+                  <Scale className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  Production Formula:
+                </span>
+                <code className="font-mono text-[11px] text-emerald-700 dark:text-emerald-400 font-bold">
+                  {executionResult.predictedYieldTonnesPerHa} t/ha × {farmAreaAcres} ac × 0.404686 = {executionResult.totalProductionTonnes ?? Math.round(executionResult.predictedYieldTonnesPerHa * farmAreaAcres * 0.404686 * 100) / 100} Tonnes
+                </code>
+              </div>
+
+              {/* Statutory Acreage Warning if > 54 Acres */}
+              {(executionResult.acreageValidationNote || farmAreaAcres > 54) && (
+                <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded-lg text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Agricultural Land Ceiling Notice:</span>{' '}
+                    {executionResult.acreageValidationNote ||
+                      'Holding exceeds the statutory 54-acre limit defined under Indian Land Ceiling Acts and the Agricultural Census for single dryland holdings. Production estimates are calculated proportionally for commercial/collective holdings.'}
+                  </div>
+                </div>
+              )}
 
               {/* PSO-NSPSO Selected Features */}
               <div>

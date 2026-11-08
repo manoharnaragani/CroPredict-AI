@@ -135,6 +135,19 @@ export const HistoricalYieldTab: React.FC<HistoricalYieldTabProps> = ({
     });
   };
 
+  const handleLgdChange = (newSelection: LgdHierarchySelection) => {
+    setLgdSelection(newSelection);
+    setCurrentPage(1);
+    if (newSelection.stateName && selectedCrop !== 'All Crops') {
+      const cleanState = newSelection.stateName.toLowerCase().replace(/[^a-z]/g, '');
+      const stateRecords = records.filter(r => (r.state || '').toLowerCase().replace(/[^a-z]/g, '').includes(cleanState));
+      const hasCrop = stateRecords.some(r => r.crop.toLowerCase() === selectedCrop.toLowerCase());
+      if (!hasCrop && stateRecords.length > 0) {
+        setSelectedCrop('All Crops');
+      }
+    }
+  };
+
   const handleDownloadSampleCSV = () => {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -291,7 +304,7 @@ export const HistoricalYieldTab: React.FC<HistoricalYieldTabProps> = ({
       {/* 1. Official Local Government Directory (LGD) Hierarchy Selector */}
       <LgdSelector
         selection={lgdSelection}
-        onChange={setLgdSelection}
+        onChange={handleLgdChange}
         showBeltShortcuts={true}
       />
 

@@ -1,6 +1,6 @@
 {
   "pipeline": "CNN-BiGRU + PSO-NSPSO Yield Regressor",
-  "trainingDate": "2026-11-08 06:27:23",
+  "trainingDate": "2026-11-08 08:29:38",
   "datasetSize": 1200,
   "trainSamples": 960,
   "heldOutTestSamples": 240,

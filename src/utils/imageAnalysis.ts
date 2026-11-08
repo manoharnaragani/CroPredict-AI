@@ -279,10 +279,29 @@ export function classifyLeafFromBiomarkers(
   ];
 
   // 1. Non-leaf validation
-  if (!features.isFoliarLeaf || features.vegetativeRatio < 0.12) {
+  const vegRatio = typeof features.vegetativeRatio === 'number' && !isNaN(features.vegetativeRatio) ? features.vegetativeRatio : 0;
+  const exgIndex = typeof features.exgVegetationIndex === 'number' && !isNaN(features.exgVegetationIndex) ? features.exgVegetationIndex : 0;
+  const greenChlorophyll = typeof features.greenChlorophyllRatio === 'number' && !isNaN(features.greenChlorophyllRatio) ? features.greenChlorophyllRatio : 1.0;
+  const brownNecrosis = typeof features.brownNecrosisRatio === 'number' && !isNaN(features.brownNecrosisRatio) ? features.brownNecrosisRatio : 0.0;
+  const yellowChlorosis = typeof features.yellowChlorosisRatio === 'number' && !isNaN(features.yellowChlorosisRatio) ? features.yellowChlorosisRatio : 0.0;
+  const eccentricity = typeof features.meanLesionEccentricity === 'number' && !isNaN(features.meanLesionEccentricity) ? features.meanLesionEccentricity : 0.5;
+  const glcmContrast = typeof features.glcmContrast === 'number' && !isNaN(features.glcmContrast) ? features.glcmContrast : 0.2;
+  const waterMargin = typeof features.waterSoakedMarginScore === 'number' && !isNaN(features.waterSoakedMarginScore) ? features.waterSoakedMarginScore : 0.0;
+  const veinThickening = typeof features.veinThickeningIndex === 'number' && !isNaN(features.veinThickeningIndex) ? features.veinThickeningIndex : 0.0;
+  const concentricRing = typeof features.concentricRingScore === 'number' && !isNaN(features.concentricRingScore) ? features.concentricRingScore : 0.0;
+
+  if (!features.isFoliarLeaf || vegRatio < 0.12) {
+    // Dynamic non-leaf confidence inversely related to green vegetative presence and ExG
+    const nonLeafConf = Math.min(
+      0.99,
+      Math.max(
+        0.72,
+        Math.round((1.0 - vegRatio * 2.2 - Math.max(0, exgIndex * 0.3)) * 100) / 100
+      )
+    );
     return {
       diseaseName: 'Non-Leaf Image Detected',
-      confidenceScore: 0.98,
+      confidenceScore: nonLeafConf,
       severity: 'Uncertain',
       isFoliarLeaf: false,
       isUncertain: true,
@@ -292,12 +311,12 @@ export function classifyLeafFromBiomarkers(
         'The uploaded photo does not contain identifiable leaf foliage or plant chlorophyll characteristics. Please upload a clear foliar photo taken in good daylight.',
       psoSelectedFeatures,
       pixelAnalysisSummary: {
-        vegetativeRatioPct: Math.round(features.vegetativeRatio * 100),
+        vegetativeRatioPct: Math.round(vegRatio * 100),
         chlorophyllLevel: 'Non-vegetative (< 12%)',
-        necrosisAreaPct: Math.round(features.brownNecrosisRatio * 100),
-        chlorosisAreaPct: Math.round(features.yellowChlorosisRatio * 100),
+        necrosisAreaPct: Math.round(brownNecrosis * 100),
+        chlorosisAreaPct: Math.round(yellowChlorosis * 100),
         lesionShape: 'N/A (Non-foliar)',
-        textureContrast: features.glcmContrast,
+        textureContrast: glcmContrast,
       },
     };
   }
@@ -312,9 +331,17 @@ export function classifyLeafFromBiomarkers(
       features.yellowChlorosisRatio < 0.04 &&
       features.greenChlorophyllRatio >= 0.95
     ) {
+      // Dynamic healthy confidence based on chlorophyll vitality and absence of necrotic tissue
+      const healthyConf =
+        0.84 +
+        Math.min(0.12, (features.greenChlorophyllRatio - 0.95) * 0.08) -
+        features.brownNecrosisRatio * 1.5 -
+        features.yellowChlorosisRatio * 1.0;
+      const confidenceScore = Math.min(0.98, Math.max(0.76, Math.round(healthyConf * 100) / 100));
+
       return {
         diseaseName: 'Healthy Rice Foliage',
-        confidenceScore: 0.96,
+        confidenceScore,
         severity: 'Healthy',
         isFoliarLeaf: true,
         isUncertain: false,
@@ -334,15 +361,23 @@ export function classifyLeafFromBiomarkers(
       };
     }
 
-    // Rice Blast: spindle/diamond lesions (high eccentricity > 0.65), necrotic center
+    // Rice Blast: spindle/diamond lesions (high eccentricity > 0.62), necrotic center
     if (
       features.brownNecrosisRatio >= 0.03 &&
       (features.meanLesionEccentricity >= 0.62 || features.glcmContrast >= 0.35) &&
       features.brownNecrosisRatio >= features.yellowChlorosisRatio * 0.8
     ) {
+      // Dynamic blast confidence based on lesion eccentricity, necrosis coverage, and texture contrast
+      const blastConf =
+        0.78 +
+        Math.min(0.12, (features.meanLesionEccentricity - 0.5) * 0.22) +
+        Math.min(0.08, features.brownNecrosisRatio * 1.5) +
+        Math.min(0.06, features.glcmContrast * 0.1);
+      const confidenceScore = Math.min(0.98, Math.max(0.74, Math.round(blastConf * 100) / 100));
+
       return {
         diseaseName: 'Rice Blast (Magnaporthe oryzae)',
-        confidenceScore: 0.95,
+        confidenceScore,
         severity: 'Severe',
         isFoliarLeaf: true,
         isUncertain: false,
@@ -367,9 +402,16 @@ export function classifyLeafFromBiomarkers(
       features.yellowChlorosisRatio >= 0.05 ||
       features.waterSoakedMarginScore >= 0.6
     ) {
+      // Dynamic blight confidence based on chlorosis ratio and water-soaked margin presence
+      const blbConf =
+        0.76 +
+        Math.min(0.12, features.yellowChlorosisRatio * 1.4) +
+        Math.min(0.10, features.waterSoakedMarginScore * 0.12);
+      const confidenceScore = Math.min(0.97, Math.max(0.72, Math.round(blbConf * 100) / 100));
+
       return {
         diseaseName: 'Bacterial Leaf Blight (Xanthomonas oryzae)',
-        confidenceScore: 0.94,
+        confidenceScore,
         severity: 'Moderate',
         isFoliarLeaf: true,
         isUncertain: false,
@@ -391,9 +433,16 @@ export function classifyLeafFromBiomarkers(
 
     // Brown Spot: scattered circular or oval brown necrotic lesions
     if (features.brownNecrosisRatio >= 0.02) {
+      // Dynamic brown spot confidence based on circularity (low eccentricity) and necrotic lesion density
+      const bsConf =
+        0.75 +
+        Math.max(0, (0.6 - features.meanLesionEccentricity) * 0.14) +
+        Math.min(0.12, features.brownNecrosisRatio * 1.8);
+      const confidenceScore = Math.min(0.96, Math.max(0.70, Math.round(bsConf * 100) / 100));
+
       return {
         diseaseName: 'Brown Spot (Bipolaris oryzae)',
-        confidenceScore: 0.93,
+        confidenceScore,
         severity: 'Moderate',
         isFoliarLeaf: true,
         isUncertain: false,
@@ -414,9 +463,10 @@ export function classifyLeafFromBiomarkers(
     }
 
     // Ambiguous Rice lesion
+    const ambConf = Math.min(0.74, Math.max(0.50, Math.round((0.52 + features.vegetativeRatio * 0.28) * 100) / 100));
     return {
       diseaseName: 'Rice Foliage Recognizable — Disease Pattern Uncertain',
-      confidenceScore: 0.72,
+      confidenceScore: ambConf,
       severity: 'Uncertain',
       isFoliarLeaf: true,
       isUncertain: true,
@@ -441,9 +491,10 @@ export function classifyLeafFromBiomarkers(
 
   if (lowerCrop.includes('cotton')) {
     if (features.brownNecrosisRatio < 0.03 && features.yellowChlorosisRatio < 0.04) {
+      const conf = Math.min(0.97, Math.max(0.75, Math.round((0.82 + Math.min(0.14, (features.greenChlorophyllRatio - 0.95) * 0.08) - features.brownNecrosisRatio * 1.5) * 100) / 100));
       return {
         diseaseName: 'Healthy Cotton Foliage',
-        confidenceScore: 0.94,
+        confidenceScore: conf,
         severity: 'Healthy',
         isFoliarLeaf: true,
         isUncertain: false,
@@ -464,9 +515,10 @@ export function classifyLeafFromBiomarkers(
     }
 
     if (features.yellowChlorosisRatio >= 0.05 || features.veinThickeningIndex > 0.5) {
+      const conf = Math.min(0.96, Math.max(0.70, Math.round((0.74 + Math.min(0.12, features.yellowChlorosisRatio * 1.4) + Math.min(0.10, features.veinThickeningIndex * 0.12)) * 100) / 100));
       return {
         diseaseName: 'Cotton Leaf Curl Virus (CLCuV)',
-        confidenceScore: 0.92,
+        confidenceScore: conf,
         severity: 'Severe',
         isFoliarLeaf: true,
         isUncertain: false,
@@ -486,9 +538,10 @@ export function classifyLeafFromBiomarkers(
       };
     }
 
+    const conf = Math.min(0.95, Math.max(0.70, Math.round((0.73 + Math.min(0.12, features.brownNecrosisRatio * 1.5) + Math.min(0.08, features.glcmContrast * 0.1)) * 100) / 100));
     return {
       diseaseName: 'Bacterial Blight (Xanthomonas malvacearum)',
-      confidenceScore: 0.91,
+      confidenceScore: conf,
       severity: 'Moderate',
       isFoliarLeaf: true,
       isUncertain: false,
@@ -510,9 +563,10 @@ export function classifyLeafFromBiomarkers(
 
   if (lowerCrop.includes('tomato')) {
     if (features.brownNecrosisRatio < 0.03 && features.yellowChlorosisRatio < 0.04) {
+      const conf = Math.min(0.97, Math.max(0.75, Math.round((0.82 + Math.min(0.14, (features.greenChlorophyllRatio - 0.95) * 0.08) - features.brownNecrosisRatio * 1.5) * 100) / 100));
       return {
         diseaseName: 'Healthy Tomato Foliage',
-        confidenceScore: 0.94,
+        confidenceScore: conf,
         severity: 'Healthy',
         isFoliarLeaf: true,
         isUncertain: false,
@@ -533,9 +587,10 @@ export function classifyLeafFromBiomarkers(
     }
 
     if (features.concentricRingScore > 0.5 || features.brownNecrosisRatio > 0.05) {
+      const conf = Math.min(0.96, Math.max(0.70, Math.round((0.74 + Math.min(0.12, features.concentricRingScore * 0.12) + Math.min(0.10, features.brownNecrosisRatio * 1.5)) * 100) / 100));
       return {
         diseaseName: 'Tomato Early Blight (Alternaria solani)',
-        confidenceScore: 0.92,
+        confidenceScore: conf,
         severity: 'Moderate',
         isFoliarLeaf: true,
         isUncertain: false,
@@ -555,9 +610,10 @@ export function classifyLeafFromBiomarkers(
       };
     }
 
+    const conf = Math.min(0.95, Math.max(0.70, Math.round((0.73 + Math.min(0.12, features.waterSoakedMarginScore * 0.12) + Math.min(0.10, features.brownNecrosisRatio * 1.4)) * 100) / 100));
     return {
       diseaseName: 'Tomato Late Blight (Phytophthora infestans)',
-      confidenceScore: 0.90,
+      confidenceScore: conf,
       severity: 'Severe',
       isFoliarLeaf: true,
       isUncertain: false,
@@ -578,9 +634,10 @@ export function classifyLeafFromBiomarkers(
   }
 
   // Any other crop: foliage is recognized, but outside verified pilot
+  const conf = Math.min(0.72, Math.max(0.48, Math.round((0.48 + features.vegetativeRatio * 0.25) * 100) / 100));
   return {
     diseaseName: `${selectedCrop} Foliage Recognizable — Disease Pattern Uncertain`,
-    confidenceScore: 0.70,
+    confidenceScore: conf,
     severity: 'Uncertain',
     isFoliarLeaf: true,
     isUncertain: true,

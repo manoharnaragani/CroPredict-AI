@@ -123,6 +123,8 @@ app.post('/api/predict/yield', (req, res) => {
       }
     }
 
+    const farmAreaAcres = Number(inputs.farm_area_acres ?? inputs.farmAreaAcres ?? 2.5);
+
     // Agronomic biological response multiplier (CNN-BiGRU calibrated)
     const nFactor = (Number(soil_N) - 300) / 150;
     const pFactor = (Number(soil_P) - 18) / 20;
@@ -137,6 +139,17 @@ app.post('/api/predict/yield', (req, res) => {
     const lowerCi = Math.round(predictedYield * 0.94 * 100) / 100;
     const upperCi = Math.round(predictedYield * 1.06 * 100) / 100;
 
+    // Total farm production in tonnes: t/ha × acres × 0.404686
+    const totalProductionTonnes = Math.round(predictedYield * farmAreaAcres * 0.404686 * 100) / 100;
+    const totalLowerCi = Math.round(lowerCi * farmAreaAcres * 0.404686 * 100) / 100;
+    const totalUpperCi = Math.round(upperCi * farmAreaAcres * 0.404686 * 100) / 100;
+    const yieldKgPerHa = Math.round(predictedYield * 1000);
+
+    const acreageValidationNote =
+      farmAreaAcres > 54
+        ? 'Operational holding exceeds the 54-acre statutory limit under Indian Land Ceiling Acts and the Agricultural Census for single-ownership non-irrigated dry holdings. Production estimates are calculated proportionally for commercial/collective holdings.'
+        : undefined;
+
     res.json({
       predictedYieldTonnesPerHa: predictedYield,
       confidenceInterval: [lowerCi, upperCi],
@@ -147,6 +160,11 @@ app.post('/api/predict/yield', (req, res) => {
       cnnBigruLatentDim: 24,
       psoOptimalFitness: 0.942,
       timestamp: new Date().toLocaleTimeString(),
+      farmAreaAcres,
+      totalProductionTonnes,
+      totalProductionConfidenceInterval: [totalLowerCi, totalUpperCi],
+      yieldKgPerHa,
+      acreageValidationNote,
     });
   } catch (err: any) {
     res.status(500).json({ error: err?.message || 'Yield prediction failed' });

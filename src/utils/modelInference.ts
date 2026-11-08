@@ -38,6 +38,7 @@ export interface YieldInferenceInput {
   avg_temperature: number;
   rainfall_mm?: number;
   ndvi?: number;
+  farmAreaAcres?: number;
 }
 
 /**
@@ -55,6 +56,7 @@ export function runLocalYieldInference(inputs: YieldInferenceInput): YieldPredic
     avg_temperature = 28.0,
     rainfall_mm = 650,
     ndvi = 0.68,
+    farmAreaAcres = 2.5,
   } = inputs;
 
   const baseYield = BASE_CROP_YIELDS[crop] || 3.5;
@@ -94,6 +96,17 @@ export function runLocalYieldInference(inputs: YieldInferenceInput): YieldPredic
   const lowerCi = Math.round(predictedYieldTonnesPerHa * 0.94 * 100) / 100;
   const upperCi = Math.round(predictedYieldTonnesPerHa * 1.06 * 100) / 100;
 
+  // Total farm production in tonnes: t/ha × acres × 0.404686
+  const totalProductionTonnes = Math.round(predictedYieldTonnesPerHa * farmAreaAcres * 0.404686 * 100) / 100;
+  const totalLowerCi = Math.round(lowerCi * farmAreaAcres * 0.404686 * 100) / 100;
+  const totalUpperCi = Math.round(upperCi * farmAreaAcres * 0.404686 * 100) / 100;
+  const yieldKgPerHa = Math.round(predictedYieldTonnesPerHa * 1000);
+
+  const acreageValidationNote =
+    farmAreaAcres > 54
+      ? 'Operational holding exceeds the 54-acre statutory limit under Indian Land Ceiling Acts and the Agricultural Census for single-ownership non-irrigated dry holdings. Production estimates are calculated proportionally for commercial/collective holdings.'
+      : undefined;
+
   return {
     predictedYieldTonnesPerHa,
     confidenceInterval: [lowerCi, upperCi],
@@ -104,6 +117,11 @@ export function runLocalYieldInference(inputs: YieldInferenceInput): YieldPredic
     cnnBigruLatentDim: 24,
     psoOptimalFitness: 0.942,
     timestamp: new Date().toLocaleTimeString(),
+    farmAreaAcres,
+    totalProductionTonnes,
+    totalProductionConfidenceInterval: [totalLowerCi, totalUpperCi],
+    yieldKgPerHa,
+    acreageValidationNote,
     modelMetadata: {
       modelName: 'CNN-BiGRU + PSO-NSPSO Yield Regressor v2.1',
       framework: 'PyTorch / Python + ONNX Quantized Embedded',
