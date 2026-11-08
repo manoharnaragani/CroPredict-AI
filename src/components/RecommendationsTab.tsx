@@ -9,6 +9,8 @@ import {
   AlertTriangle,
   Info,
   RotateCcw,
+  Landmark,
+  Scale,
 } from 'lucide-react';
 import { LanguageCode, SoilData, WeatherData } from '../types/index.ts';
 import { getCropRecommendations, getFertilizerRecommendations } from '../utils/recommendations.ts';
@@ -38,6 +40,9 @@ export const RecommendationsTab: React.FC<RecommendationsTabProps> = ({
   lang = 'en',
 }) => {
   const [selectedCropForFertilizer, setSelectedCropForFertilizer] = useState<string>('Rice (Paddy)');
+  const [selectedRegion, setSelectedRegion] = useState<string>('Punjab');
+  const [isComparingRegions, setIsComparingRegions] = useState<boolean>(false);
+  const [compareRegionB, setCompareRegionB] = useState<string>('Karnataka');
   const [activeSubView, setActiveSubView] = useState<'crops' | 'fertilizers'>('crops');
   const [simulatedN, setSimulatedN] = useState<number | null>(null);
   const [simulatedRain, setSimulatedRain] = useState<boolean | null>(null);
@@ -82,8 +87,18 @@ export const RecommendationsTab: React.FC<RecommendationsTabProps> = ({
   const fertilizerRecs = getFertilizerRecommendations(
     effectiveSoil,
     selectedCropForFertilizer,
-    effectiveWeather
+    effectiveWeather,
+    selectedRegion
   );
+
+  const fertilizerRecsB = isComparingRegions
+    ? getFertilizerRecommendations(
+        effectiveSoil,
+        selectedCropForFertilizer,
+        effectiveWeather,
+        compareRegionB
+      )
+    : [];
 
   return (
     <div className="space-y-6">
@@ -348,95 +363,318 @@ export const RecommendationsTab: React.FC<RecommendationsTabProps> = ({
             </div>
           </div>
 
-          {/* Schedule Header & Crop Selector */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white dark:bg-stone-900 p-4 rounded-xl border border-stone-200 dark:border-stone-800 shadow-xs">
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="text-base font-bold text-stone-900 dark:text-white">
-                  Fertilizer Regimen for {selectedCropForFertilizer}
-                </h4>
-                {selectedCropForFertilizer.toLowerCase().includes('bajra') || selectedCropForFertilizer.toLowerCase().includes('millet') ? (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                    Uncalibrated Package
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                    Verified STCR Package
-                  </span>
-                )}
+          {/* Schedule Header, Crop Selector, Region Selector & Comparison Toggle */}
+          <div className="bg-white dark:bg-stone-900 p-4 rounded-xl border border-stone-200 dark:border-stone-800 shadow-xs space-y-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-base font-bold text-stone-900 dark:text-white">
+                    Fertilizer Regimen for {selectedCropForFertilizer}
+                  </h4>
+                  {selectedCropForFertilizer.toLowerCase().includes('bajra') || selectedCropForFertilizer.toLowerCase().includes('millet') ? (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                      Uncalibrated Package
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                      Verified STCR Package
+                    </span>
+                  )}
+                  {selectedRegion && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1">
+                      <Landmark className="w-3 h-3 text-blue-600" />
+                      {selectedRegion} Package
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                  Targeting Soil N: {effectiveSoil.nitrogen} kg/ha • P: {effectiveSoil.phosphorus} kg/ha • K: {effectiveSoil.potassium} kg/ha • pH: {effectiveSoil.pH} • Rain: {effectiveWeather?.hourly?.rainProbability?.[0] || 15}%
+                </p>
               </div>
-              <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                Targeting Soil N: {effectiveSoil.nitrogen} kg/ha • pH: {effectiveSoil.pH} • Weather: {effectiveWeather?.hourly?.rainProbability?.[0] || 15}% rain prob
-              </p>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Crop Selector */}
+                <div className="flex items-center gap-1.5">
+                  <label htmlFor="fert-crop" className="text-xs font-semibold text-stone-700 dark:text-stone-300 whitespace-nowrap">
+                    Crop:
+                  </label>
+                  <select
+                    id="fert-crop"
+                    value={selectedCropForFertilizer}
+                    onChange={e => setSelectedCropForFertilizer(e.target.value)}
+                    className="px-2.5 py-1.5 text-xs bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:ring-2 focus:ring-emerald-500 font-medium text-stone-800 dark:text-stone-100"
+                  >
+                    {ALL_AVAILABLE_CROPS.map(crop => (
+                      <option key={crop} value={crop}>
+                        {crop}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Region Selector */}
+                <div className="flex items-center gap-1.5">
+                  <label htmlFor="fert-region" className="text-xs font-semibold text-stone-700 dark:text-stone-300 whitespace-nowrap">
+                    Region:
+                  </label>
+                  <select
+                    id="fert-region"
+                    value={selectedRegion}
+                    onChange={e => setSelectedRegion(e.target.value)}
+                    className="px-2.5 py-1.5 text-xs bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:ring-2 focus:ring-emerald-500 font-medium text-stone-800 dark:text-stone-100"
+                  >
+                    <option value="Punjab">Punjab (PAU Ludhiana)</option>
+                    <option value="Karnataka">Karnataka (UAS Bangalore/Dharwad)</option>
+                    <option value="Maharashtra">Maharashtra (MPKV Rahuri/PDKV)</option>
+                    <option value="Andhra Pradesh">Andhra Pradesh (ANGRAU)</option>
+                    <option value="Haryana">Haryana (CCSHAU Hisar)</option>
+                    <option value="Gujarat">Gujarat (JAU/AAU)</option>
+                    <option value="Tamil Nadu">Tamil Nadu (TNAU)</option>
+                    <option value="Nagaland">Nagaland (Uncalibrated Demo)</option>
+                  </select>
+                </div>
+
+                {/* Compare 2 Regions Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setIsComparingRegions(prev => !prev)}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg border flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    isComparingRegions
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-300 dark:border-stone-700 hover:bg-stone-200'
+                  }`}
+                >
+                  <Scale className="w-3.5 h-3.5" />
+                  <span>{isComparingRegions ? 'Exit Comparison' : 'Compare 2 Regions'}</span>
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <label htmlFor="fert-crop" className="text-xs font-semibold text-stone-700 dark:text-stone-300 whitespace-nowrap">
-                Select Crop:
-              </label>
-              <select
-                id="fert-crop"
-                value={selectedCropForFertilizer}
-                onChange={e => setSelectedCropForFertilizer(e.target.value)}
-                className="px-3 py-1.5 text-xs bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:ring-2 focus:ring-emerald-500 font-medium text-stone-800 dark:text-stone-100"
-              >
-                {ALL_AVAILABLE_CROPS.map(crop => (
-                  <option key={crop} value={crop}>
-                    {crop}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* If Comparison Active, show Region B selector */}
+            {isComparingRegions && (
+              <div className="bg-emerald-50 dark:bg-emerald-950/40 p-3 rounded-lg border border-emerald-200 dark:border-emerald-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2">
+                  <Scale className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
+                  <span className="font-semibold text-emerald-900 dark:text-emerald-200">
+                    Comparing identical soil readings (N={effectiveSoil.nitrogen}, P={effectiveSoil.phosphorus}, K={effectiveSoil.potassium}, pH={effectiveSoil.pH}) between:
+                  </span>
+                  <span className="font-bold text-blue-700 dark:text-blue-300 underline">{selectedRegion}</span>
+                  <span className="font-bold text-stone-500">vs</span>
+                  <select
+                    value={compareRegionB}
+                    onChange={e => setCompareRegionB(e.target.value)}
+                    aria-label="Select comparison region B"
+                    className="px-2 py-1 text-xs bg-white dark:bg-stone-800 border border-emerald-300 dark:border-emerald-700 rounded-md font-bold text-emerald-900 dark:text-emerald-200"
+                  >
+                    <option value="Karnataka">Karnataka (UAS Bangalore)</option>
+                    <option value="Punjab">Punjab (PAU Ludhiana)</option>
+                    <option value="Maharashtra">Maharashtra (MPKV Rahuri)</option>
+                    <option value="Andhra Pradesh">Andhra Pradesh (ANGRAU)</option>
+                    <option value="Nagaland">Nagaland (Uncalibrated Demo)</option>
+                  </select>
+                </div>
+                <span className="text-[11px] text-emerald-700 dark:text-emerald-300 italic">
+                  Identical Soil inputs show distinct University prescriptions & micronutrient mandates
+                </span>
+              </div>
+            )}
           </div>
 
-          <div className="space-y-3">
-            {fertilizerRecs.map((fert, idx) => (
-              <div
-                key={idx}
-                className="bg-white dark:bg-stone-900 rounded-xl shadow-xs border border-stone-200 dark:border-stone-800 p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-colors"
-              >
-                <div className="flex-1 space-y-1.5">
+          {/* Render Fertilizer Recommendations List (Single Region or Dual-Region Comparison) */}
+          {isComparingRegions ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Column 1: Region A */}
+              <div className="space-y-3">
+                <div className="bg-blue-50 dark:bg-blue-950/60 p-3 rounded-xl border border-blue-200 dark:border-blue-800 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold text-xs flex items-center justify-center shrink-0">
-                      {idx + 1}
-                    </span>
-                    <h5 className="text-sm sm:text-base font-bold text-stone-900 dark:text-white">
-                      {fert.name}
+                    <Landmark className="w-4 h-4 text-blue-700 dark:text-blue-400" />
+                    <h5 className="font-bold text-sm text-blue-950 dark:text-blue-100">
+                      Region A: {selectedRegion} Package
                     </h5>
                   </div>
-                  <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed pl-8">
-                    {fert.purpose}
-                  </p>
-
-                  <div className="pl-8 pt-1">
-                    <span className="text-[11px] font-semibold text-emerald-900 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-md border border-emerald-100 dark:border-emerald-800 inline-block">
-                      💡 {t('reason', lang)}: {fert.explanation}
-                    </span>
-                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-200/80 dark:bg-blue-900 text-blue-900 dark:text-blue-200">
+                    {fertilizerRecs.length} Directives
+                  </span>
                 </div>
 
-                <div className="bg-stone-50 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 rounded-lg p-3 shrink-0 w-full md:w-64 text-xs space-y-1.5">
-                  <div>
-                    <span className="text-[10px] text-stone-400 uppercase font-bold block">
-                      {t('dosage', lang)}
-                    </span>
-                    <span className="font-bold text-emerald-800 dark:text-emerald-300 text-xs">
-                      {fert.dosage}
-                    </span>
+                {fertilizerRecs.map((fert, idx) => (
+                  <div
+                    key={`regA-${idx}`}
+                    className="bg-white dark:bg-stone-900 rounded-xl shadow-xs border border-stone-200 dark:border-stone-800 p-4 flex flex-col justify-between gap-3 transition-colors"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-start gap-2">
+                        <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                          {idx + 1}
+                        </span>
+                        <div>
+                          <h6 className="text-sm font-bold text-stone-900 dark:text-white leading-tight">
+                            {fert.name}
+                          </h6>
+                          {fert.source && (
+                            <span className="text-[10px] text-stone-500 dark:text-stone-400 block mt-0.5">
+                              🏛️ Source: {fert.source}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed pl-7">
+                        {fert.purpose}
+                      </p>
+                      <div className="pl-7 pt-1">
+                        <span className="text-[11px] font-semibold text-emerald-900 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-800 inline-block">
+                          💡 {fert.explanation}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-stone-50 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 rounded-lg p-2.5 text-xs space-y-1">
+                      <div>
+                        <span className="text-[10px] text-stone-400 uppercase font-bold block">
+                          Dosage:
+                        </span>
+                        <span className="font-bold text-emerald-800 dark:text-emerald-300 text-xs">
+                          {fert.dosage}
+                        </span>
+                      </div>
+                      <div className="pt-1 border-t border-stone-200 dark:border-stone-700">
+                        <span className="text-[10px] text-stone-400 uppercase font-bold block">
+                          Timing:
+                        </span>
+                        <span className="text-stone-700 dark:text-stone-300 text-[11px] font-medium">
+                          {fert.applicationTiming}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="pt-1 border-t border-stone-200 dark:border-stone-700">
-                    <span className="text-[10px] text-stone-400 uppercase font-bold block">
-                      {t('timing', lang)}
-                    </span>
-                    <span className="text-stone-700 dark:text-stone-300 text-[11px] font-medium">
-                      {fert.applicationTiming}
-                    </span>
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+
+              {/* Column 2: Region B */}
+              <div className="space-y-3">
+                <div className="bg-amber-50 dark:bg-amber-950/60 p-3 rounded-xl border border-amber-200 dark:border-amber-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Landmark className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+                    <h5 className="font-bold text-sm text-amber-950 dark:text-amber-100">
+                      Region B: {compareRegionB} Package
+                    </h5>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-200/80 dark:bg-amber-900 text-amber-900 dark:text-amber-200">
+                    {fertilizerRecsB.length} Directives
+                  </span>
+                </div>
+
+                {fertilizerRecsB.map((fert, idx) => (
+                  <div
+                    key={`regB-${idx}`}
+                    className="bg-white dark:bg-stone-900 rounded-xl shadow-xs border border-stone-200 dark:border-stone-800 p-4 flex flex-col justify-between gap-3 transition-colors"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-start gap-2">
+                        <span className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                          {idx + 1}
+                        </span>
+                        <div>
+                          <h6 className="text-sm font-bold text-stone-900 dark:text-white leading-tight">
+                            {fert.name}
+                          </h6>
+                          {fert.source && (
+                            <span className="text-[10px] text-stone-500 dark:text-stone-400 block mt-0.5">
+                              🏛️ Source: {fert.source}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed pl-7">
+                        {fert.purpose}
+                      </p>
+                      <div className="pl-7 pt-1">
+                        <span className="text-[11px] font-semibold text-amber-900 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded border border-amber-100 dark:border-amber-800 inline-block">
+                          💡 {fert.explanation}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-stone-50 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 rounded-lg p-2.5 text-xs space-y-1">
+                      <div>
+                        <span className="text-[10px] text-stone-400 uppercase font-bold block">
+                          Dosage:
+                        </span>
+                        <span className="font-bold text-amber-800 dark:text-amber-300 text-xs">
+                          {fert.dosage}
+                        </span>
+                      </div>
+                      <div className="pt-1 border-t border-stone-200 dark:border-stone-700">
+                        <span className="text-[10px] text-stone-400 uppercase font-bold block">
+                          Timing:
+                        </span>
+                        <span className="text-stone-700 dark:text-stone-300 text-[11px] font-medium">
+                          {fert.applicationTiming}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {fertilizerRecs.map((fert, idx) => (
+                <div
+                  key={idx}
+                  className="bg-white dark:bg-stone-900 rounded-xl shadow-xs border border-stone-200 dark:border-stone-800 p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-colors"
+                >
+                  <div className="flex-1 space-y-1.5">
+                    <div className="flex items-start gap-2">
+                      <span className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <div>
+                        <h5 className="text-sm sm:text-base font-bold text-stone-900 dark:text-white">
+                          {fert.name}
+                        </h5>
+                        {fert.source && (
+                          <span className="text-[11px] text-stone-500 dark:text-stone-400 flex items-center gap-1 mt-0.5">
+                            <Landmark className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                            Source: {fert.source} ({fert.region || 'All India'})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed pl-8">
+                      {fert.purpose}
+                    </p>
+
+                    <div className="pl-8 pt-1">
+                      <span className="text-[11px] font-semibold text-emerald-900 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-md border border-emerald-100 dark:border-emerald-800 inline-block">
+                        💡 {t('reason', lang)}: {fert.explanation}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-stone-50 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 rounded-lg p-3 shrink-0 w-full md:w-64 text-xs space-y-1.5">
+                    <div>
+                      <span className="text-[10px] text-stone-400 uppercase font-bold block">
+                        {t('dosage', lang)}
+                      </span>
+                      <span className="font-bold text-emerald-800 dark:text-emerald-300 text-xs">
+                        {fert.dosage}
+                      </span>
+                    </div>
+                    <div className="pt-1 border-t border-stone-200 dark:border-stone-700">
+                      <span className="text-[10px] text-stone-400 uppercase font-bold block">
+                        {t('timing', lang)}
+                      </span>
+                      <span className="text-stone-700 dark:text-stone-300 text-[11px] font-medium">
+                        {fert.applicationTiming}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

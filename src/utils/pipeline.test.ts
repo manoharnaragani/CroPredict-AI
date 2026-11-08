@@ -352,3 +352,36 @@ test('Fertilizer recommendations dynamically adjust for Crop (Rice vs Chickpea),
   assert.ok(unverifiedNotice);
 });
 
+test('Fertilizer recommendations adjust for official Region packages (Punjab PAU vs Karnataka UAS) and flag uncalibrated regions', async () => {
+  const { getFertilizerRecommendations } = await import('./recommendations.ts');
+
+  // Identical base soil readings
+  const identicalSoil = { pH: 6.8, nitrogen: 220, phosphorus: 18, potassium: 200 };
+
+  // 1. Test Punjab region for Rice:
+  const punjabRecs = getFertilizerRecommendations(identicalSoil, 'Rice (Paddy)', null, 'Punjab');
+  assert.ok(punjabRecs.length > 0);
+  const punjabN = punjabRecs.find(r => r.name.includes('PAU High Input') || r.name.includes('PAU'));
+  assert.ok(punjabN, 'Expected PAU High Input Regimen for Punjab');
+  assert.ok(punjabN.source?.includes('Punjab Agricultural University'));
+  assert.equal(punjabN.region, 'Punjab');
+  const punjabZn = punjabRecs.find(r => r.name.includes('PAU Malwa/Doaba'));
+  assert.ok(punjabZn, 'Expected PAU Malwa/Doaba ZnSO4 mandate for Punjab');
+
+  // 2. Test Karnataka region with IDENTICAL inputs:
+  const karnatakaRecs = getFertilizerRecommendations(identicalSoil, 'Rice (Paddy)', null, 'Karnataka');
+  assert.ok(karnatakaRecs.length > 0);
+  const karnatakaN = karnatakaRecs.find(r => r.name.includes('UAS Bangalore') || r.name.includes('Delta Regimen'));
+  assert.ok(karnatakaN, 'Expected UAS Bangalore Delta Regimen for Karnataka');
+  assert.ok(karnatakaN.source?.includes('UAS Bangalore'));
+  assert.equal(karnatakaN.region, 'Karnataka');
+  const karnatakaK = karnatakaRecs.find(r => r.name.includes('UAS Bangalore Split Regimen'));
+  assert.ok(karnatakaK, 'Expected UAS Bangalore Split Regimen for Potash in Karnataka red soils');
+
+  // 3. Test uncalibrated region:
+  const uncalibratedRecs = getFertilizerRecommendations(identicalSoil, 'Rice (Paddy)', null, 'Nagaland');
+  const unavailableNotice = uncalibratedRecs.find(r => r.name.includes('Official Local Guidance Unavailable for Nagaland'));
+  assert.ok(unavailableNotice, 'Expected unavailable guidance advisory for uncalibrated region');
+  assert.ok(unavailableNotice.explanation.includes('Official State Agricultural University package of practices is currently unavailable'));
+});
+

@@ -142,6 +142,8 @@ export interface FertilizerRecommendation {
   applicationTiming: string;
   purpose: string;
   explanation: string;
+  source?: string;
+  region?: string;
 }
 
 export interface FeatureModelStatus {
