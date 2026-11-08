@@ -1,0 +1,52 @@
+{
+  "pipeline": "CNN-BiGRU + PSO-NSPSO Yield Regressor",
+  "trainingDate": "2026-11-08 06:27:23",
+  "datasetSize": 1200,
+  "trainSamples": 960,
+  "heldOutTestSamples": 240,
+  "supportedCrops": [
+    "Rice (Paddy)",
+    "Wheat",
+    "Sugarcane",
+    "Cotton",
+    "Maize",
+    "Soybean",
+    "Ragi (Finger Millet)",
+    "Bengal Gram (Chickpea)",
+    "Groundnut",
+    "Mustard",
+    "Tur (Arhar/Pigeon Pea)",
+    "Jowar (Sorghum)"
+  ],
+  "supportedRegions": [
+    "Karnataka",
+    "Punjab",
+    "Maharashtra",
+    "Haryana",
+    "Andhra Pradesh",
+    "Uttar Pradesh",
+    "Madhya Pradesh",
+    "Gujarat",
+    "Tamil Nadu",
+    "Telangana",
+    "Bihar",
+    "West Bengal",
+    "Rajasthan",
+    "Odisha"
+  ],
+  "metrics": {
+    "beforeSelection": {
+      "maeTonnesPerHa": 0.364,
+      "rmse": 0.548,
+      "r2": 0.884,
+      "featuresCount": 24
+    },
+    "afterSelection": {
+      "maeTonnesPerHa": 0.272,
+      "rmse": 0.376,
+      "r2": 0.942,
+      "featuresCount": 10
+    },
+    "maeImprovementPct": 25.3
+  }
+}

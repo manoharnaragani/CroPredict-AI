@@ -1,0 +1,72 @@
+{
+  "0": {
+    "name": "Rice Blast (Magnaporthe oryzae)",
+    "crop": "Rice (Paddy)",
+    "severity": "Severe",
+    "isHealthy": false,
+    "icarRecommendation": "Spray Tricyclazole 75% WP @ 0.6 g/L or Isoprothiolane 40% EC @ 1.5 mL/L. Avoid excessive nitrogenous fertilizer application during active tillering."
+  },
+  "1": {
+    "name": "Bacterial Leaf Blight (Xanthomonas oryzae)",
+    "crop": "Rice (Paddy)",
+    "severity": "Moderate",
+    "isHealthy": false,
+    "icarRecommendation": "Spray Streptocycline @ 0.1 g/L + Copper Oxychloride 50% WP @ 2.5 g/L. Drain field and apply 25% extra Potash (MOP) to induce systemic resistance."
+  },
+  "2": {
+    "name": "Brown Spot (Bipolaris oryzae)",
+    "crop": "Rice (Paddy)",
+    "severity": "Moderate",
+    "isHealthy": false,
+    "icarRecommendation": "Foliar spray of Mancozeb 75% WP @ 2 g/L or Propiconazole 25% EC @ 1 mL/L. Ensure balanced potassium and zinc micronutrient fertilization."
+  },
+  "3": {
+    "name": "Healthy Rice Foliage",
+    "crop": "Rice (Paddy)",
+    "severity": "Healthy",
+    "isHealthy": true,
+    "icarRecommendation": "Canopy is vigorous and healthy. Maintain intermittent wetting and drying (AWD) water management and baseline NPK schedule."
+  },
+  "4": {
+    "name": "Cotton Leaf Curl Virus (CLCuV)",
+    "crop": "Cotton",
+    "severity": "Severe",
+    "isHealthy": false,
+    "icarRecommendation": "Manage whitefly vector by installing yellow sticky traps (10/acre) and foliar spray of Diafenthiuron 50% WP @ 1 g/L or Flonicamid 50% WG @ 0.3 g/L."
+  },
+  "5": {
+    "name": "Bacterial Blight (Xanthomonas malvacearum)",
+    "crop": "Cotton",
+    "severity": "Moderate",
+    "isHealthy": false,
+    "icarRecommendation": "Spray Copper Hydroxide 77% WP @ 2 g/L or Streptocycline @ 100 ppm. Collect and burn infected plant debris post-harvest."
+  },
+  "6": {
+    "name": "Healthy Cotton Foliage",
+    "crop": "Cotton",
+    "severity": "Healthy",
+    "isHealthy": true,
+    "icarRecommendation": "No foliar viral or bacterial symptoms detected. Continue regular scouting for bollworm and sucking pests."
+  },
+  "7": {
+    "name": "Tomato Early Blight (Alternaria solani)",
+    "crop": "Tomato",
+    "severity": "Moderate",
+    "isHealthy": false,
+    "icarRecommendation": "Spray Azoxystrobin 23% SC @ 1 mL/L or Chlorothalonil 75% WP @ 2 g/L. Prune lower diseased foliage to enhance airflow."
+  },
+  "8": {
+    "name": "Tomato Late Blight (Phytophthora infestans)",
+    "crop": "Tomato",
+    "severity": "Severe",
+    "isHealthy": false,
+    "icarRecommendation": "Immediate preventative spray of Metalaxyl 8% + Mancozeb 64% WP @ 2.5 g/L or Dimethomorph 50% WP @ 1 g/L. Avoid overhead furrow splashing."
+  },
+  "9": {
+    "name": "Healthy Tomato Foliage",
+    "crop": "Tomato",
+    "severity": "Healthy",
+    "isHealthy": true,
+    "icarRecommendation": "Foliage shows vibrant chlorophyll levels without concentric lesions. Maintain drip irrigation and prophylactic bio-fungicide sprays."
+  }
+}

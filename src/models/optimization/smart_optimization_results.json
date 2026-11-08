@@ -1,0 +1,229 @@
+{
+  "lastRunTimestamp": "2026-11-08 06:27:23",
+  "yieldModel": {
+    "name": "CNN-BiGRU + PSO-NSPSO Crop Yield Regressor",
+    "targetUnit": "tonnes/hectare",
+    "sampleCounts": {
+      "total": 1200,
+      "train": 960,
+      "heldOutTest": 240
+    },
+    "supportedCrops": [
+      "Rice (Paddy)",
+      "Wheat",
+      "Sugarcane",
+      "Cotton",
+      "Maize",
+      "Soybean",
+      "Ragi (Finger Millet)",
+      "Bengal Gram (Chickpea)",
+      "Groundnut",
+      "Mustard",
+      "Tur (Arhar/Pigeon Pea)",
+      "Jowar (Sorghum)"
+    ],
+    "supportedRegions": [
+      "Karnataka",
+      "Punjab",
+      "Maharashtra",
+      "Haryana",
+      "Andhra Pradesh",
+      "Uttar Pradesh",
+      "Madhya Pradesh",
+      "Gujarat",
+      "Tamil Nadu",
+      "Telangana",
+      "Bihar",
+      "West Bengal",
+      "Rajasthan",
+      "Odisha"
+    ],
+    "candidateFeatures": [
+      "soil_pH",
+      "soil_N",
+      "soil_P",
+      "soil_K",
+      "soil_organic_carbon",
+      "soil_moisture_pct",
+      "avg_temperature",
+      "diurnal_temp_range",
+      "season_rainfall_mm",
+      "relative_humidity_pct",
+      "solar_radiation_mj",
+      "growing_degree_days",
+      "sentinel2_ndvi",
+      "sentinel2_evi",
+      "sentinel2_ndwi",
+      "area_harvested_ha",
+      "irrigation_index",
+      "fertilizer_intensity_kg_ha",
+      "historical_3yr_trend",
+      "pest_pressure_index",
+      "consecutive_dry_spells",
+      "elevation_m",
+      "monsoon_onset_anomaly_days",
+      "heat_stress_hours"
+    ],
+    "selectedFeatures": [
+      "soil_N",
+      "soil_P",
+      "soil_K",
+      "soil_moisture_pct",
+      "avg_temperature",
+      "season_rainfall_mm",
+      "sentinel2_ndvi",
+      "irrigation_index",
+      "fertilizer_intensity_kg_ha",
+      "historical_3yr_trend"
+    ],
+    "retainedCount": 10,
+    "totalCount": 24,
+    "redundancyReductionPct": 58.3,
+    "heldOutPerformance": {
+      "before": {
+        "mae": 0.364,
+        "rmse": 0.548,
+        "r2": 0.884
+      },
+      "after": {
+        "mae": 0.272,
+        "rmse": 0.376,
+        "r2": 0.942
+      },
+      "maeImprovementPct": 25.3
+    },
+    "paretoFrontSample": [
+      {
+        "selectedCount": 10,
+        "mae": 0.272,
+        "sparsity": 0.583
+      },
+      {
+        "selectedCount": 9,
+        "mae": 0.292,
+        "sparsity": 0.625
+      },
+      {
+        "selectedCount": 8,
+        "mae": 0.322,
+        "sparsity": 0.667
+      },
+      {
+        "selectedCount": 7,
+        "mae": 0.362,
+        "sparsity": 0.708
+      },
+      {
+        "selectedCount": 6,
+        "mae": 0.412,
+        "sparsity": 0.75
+      }
+    ]
+  },
+  "diseaseModel": {
+    "name": "CNN-BiGRU + PSO-NSPSO Foliar Disease Classifier",
+    "targetUnit": "Macro-F1 Score (%)",
+    "sampleCounts": {
+      "total": 1000,
+      "train": 800,
+      "heldOutTest": 200,
+      "verifiedRicePilotTest": 80
+    },
+    "supportedCrops": [
+      "Rice (Paddy) [Verified Pilot]",
+      "Cotton [Preliminary Pilot]",
+      "Tomato [Preliminary Pilot]"
+    ],
+    "verifiedPilotScope": "Verified pilot covers three rice diseases (Rice Blast, Bacterial Leaf Blight, Brown Spot) + Healthy Rice. Broader coverage for other crops requires real labeled field photos.",
+    "candidateFeatures": [
+      "mean_hue",
+      "mean_saturation",
+      "mean_value",
+      "green_chlorophyll_ratio",
+      "brown_necrosis_ratio",
+      "yellow_chlorosis_ratio",
+      "glcm_contrast",
+      "glcm_homogeneity",
+      "glcm_energy",
+      "glcm_correlation",
+      "lesion_count_per_cm2",
+      "mean_lesion_eccentricity",
+      "lesion_boundary_gradient",
+      "spectral_vari_index",
+      "spectral_gli_index",
+      "spatial_fft_high_freq",
+      "vein_thickening_index",
+      "concentric_ring_score",
+      "water_soaked_margin_score",
+      "leaf_edge_curl_angle",
+      "red_band_variance",
+      "blue_band_variance",
+      "exg_vegetation_index",
+      "canopy_coverage_ratio",
+      "stomatic_conductance_est",
+      "ambient_relative_humidity",
+      "canopy_temperature_diff",
+      "dew_point_spread",
+      "leaf_surface_wetness",
+      "spore_dispersion_risk",
+      "previous_field_history",
+      "crop_growth_stage_code"
+    ],
+    "selectedFeatures": [
+      "mean_hue",
+      "mean_saturation",
+      "green_chlorophyll_ratio",
+      "brown_necrosis_ratio",
+      "yellow_chlorosis_ratio",
+      "glcm_contrast",
+      "lesion_count_per_cm2",
+      "mean_lesion_eccentricity",
+      "vein_thickening_index",
+      "concentric_ring_score",
+      "water_soaked_margin_score",
+      "leaf_edge_curl_angle",
+      "exg_vegetation_index"
+    ],
+    "retainedCount": 13,
+    "totalCount": 32,
+    "redundancyReductionPct": 59.4,
+    "heldOutPerformance": {
+      "before": {
+        "macroF1Pct": 59.35,
+        "accuracyPct": 60.0,
+        "precisionPct": 63.99,
+        "recallPct": 60.0
+      },
+      "after": {
+        "macroF1Pct": 55.46,
+        "accuracyPct": 58.5,
+        "precisionPct": 55.32,
+        "recallPct": 58.5,
+        "verifiedRiceCohortMacroF1": 71.3
+      },
+      "macroF1GainPct": -3.89
+    },
+    "paretoFrontSample": [
+      {
+        "selectedCount": 13,
+        "macroF1Pct": 55.46,
+        "sparsity": 0.594
+      },
+      {
+        "selectedCount": 12,
+        "macroF1Pct": 54.6,
+        "sparsity": 0.625
+      },
+      {
+        "selectedCount": 10,
+        "macroF1Pct": 53.4,
+        "sparsity": 0.688
+      },
+      {
+        "selectedCount": 8,
+        "macroF1Pct": 51.2,
+        "sparsity": 0.75
+      }
+    ]
+  }
+}

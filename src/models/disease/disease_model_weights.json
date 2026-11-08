@@ -1,0 +1,21 @@
+{
+  "architecture": "CNN-BiGRU-Classifier",
+  "conv_filters": 8,
+  "gru_hidden_dim": 12,
+  "latent_dim": 24,
+  "selected_features": [
+    "mean_hue",
+    "mean_saturation",
+    "green_chlorophyll_ratio",
+    "brown_necrosis_ratio",
+    "yellow_chlorosis_ratio",
+    "glcm_contrast",
+    "lesion_count_per_cm2",
+    "mean_lesion_eccentricity",
+    "vein_thickening_index",
+    "concentric_ring_score",
+    "water_soaked_margin_score",
+    "leaf_edge_curl_angle",
+    "exg_vegetation_index"
+  ]
+}

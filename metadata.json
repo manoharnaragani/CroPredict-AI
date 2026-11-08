@@ -1,0 +1,6 @@
+{
+  "name": "CroPredict AI - Agriculture Decision System",
+  "description": "CroPredict AI: Mobile-friendly agriculture dashboard for Indian farmers with live Open-Meteo weather, historical yield CSV analytics, soil health, crop recommendations, and CNN-BiGRU + PSO-NSPSO pipeline connectivity.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
