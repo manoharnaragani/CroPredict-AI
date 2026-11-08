@@ -1,12 +1,13 @@
 {
-  "lastRunTimestamp": "2026-11-08 08:29:38",
+  "lastRunTimestamp": "2026-11-08 09:08:08",
   "yieldModel": {
     "name": "CNN-BiGRU + PSO-NSPSO Crop Yield Regressor",
     "targetUnit": "tonnes/hectare",
     "sampleCounts": {
       "total": 1200,
       "train": 960,
-      "heldOutTest": 240
+      "heldOutTest": 240,
+      "officialGovernmentRecords": 94
     },
     "supportedCrops": [
       "Rice (Paddy)",
@@ -81,41 +82,41 @@
     "redundancyReductionPct": 58.3,
     "heldOutPerformance": {
       "before": {
-        "mae": 0.364,
-        "rmse": 0.548,
-        "r2": 0.884
+        "mae": 0.302,
+        "rmse": 0.464,
+        "r2": 0.848
       },
       "after": {
-        "mae": 0.272,
-        "rmse": 0.376,
-        "r2": 0.942
+        "mae": 0.26,
+        "rmse": 0.429,
+        "r2": 0.87
       },
-      "maeImprovementPct": 25.3
+      "maeImprovementPct": 13.9
     },
     "paretoFrontSample": [
       {
         "selectedCount": 10,
-        "mae": 0.272,
+        "mae": 0.26,
         "sparsity": 0.583
       },
       {
         "selectedCount": 9,
-        "mae": 0.292,
+        "mae": 0.28,
         "sparsity": 0.625
       },
       {
         "selectedCount": 8,
-        "mae": 0.322,
+        "mae": 0.31,
         "sparsity": 0.667
       },
       {
         "selectedCount": 7,
-        "mae": 0.362,
+        "mae": 0.35,
         "sparsity": 0.708
       },
       {
         "selectedCount": 6,
-        "mae": 0.412,
+        "mae": 0.4,
         "sparsity": 0.75
       }
     ]
@@ -127,7 +128,7 @@
       "total": 1000,
       "train": 800,
       "heldOutTest": 200,
-      "verifiedRicePilotTest": 78
+      "verifiedRicePilotTest": 72
     },
     "supportedCrops": [
       "Rice (Paddy) [Verified Pilot]",
@@ -189,39 +190,39 @@
     "redundancyReductionPct": 59.4,
     "heldOutPerformance": {
       "before": {
-        "macroF1Pct": 59.35,
-        "accuracyPct": 60.0,
-        "precisionPct": 63.99,
-        "recallPct": 60.0
+        "macroF1Pct": 84.49,
+        "accuracyPct": 86.5,
+        "precisionPct": 92.55,
+        "recallPct": 87.8
       },
       "after": {
-        "macroF1Pct": 55.46,
-        "accuracyPct": 58.5,
-        "precisionPct": 55.32,
-        "recallPct": 58.5,
-        "verifiedRiceCohortMacroF1": 71.3
+        "macroF1Pct": 84.49,
+        "accuracyPct": 86.5,
+        "precisionPct": 92.55,
+        "recallPct": 87.8,
+        "verifiedRiceCohortMacroF1": 93.31
       },
-      "macroF1GainPct": -3.89
+      "macroF1GainPct": 0.0
     },
     "paretoFrontSample": [
       {
         "selectedCount": 13,
-        "macroF1Pct": 55.46,
+        "macroF1Pct": 84.49,
         "sparsity": 0.594
       },
       {
         "selectedCount": 11,
-        "macroF1Pct": 53.36,
+        "macroF1Pct": 82.39,
         "sparsity": 0.656
       },
       {
         "selectedCount": 9,
-        "macroF1Pct": 50.66,
+        "macroF1Pct": 79.69,
         "sparsity": 0.719
       },
       {
         "selectedCount": 7,
-        "macroF1Pct": 46.96,
+        "macroF1Pct": 75.99,
         "sparsity": 0.781
       }
     ]

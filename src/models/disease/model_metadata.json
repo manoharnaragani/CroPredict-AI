@@ -1,35 +1,35 @@
 {
   "pipeline": "CNN-BiGRU + PSO-NSPSO Foliar Disease Classifier",
-  "trainingDate": "2026-11-08 08:29:38",
+  "trainingDate": "2026-11-08 09:08:08",
   "datasetSize": 1000,
   "trainSamples": 800,
   "heldOutTestSamples": 200,
   "classesCount": 10,
   "metrics": {
     "beforeSelection": {
-      "macroF1Pct": 59.35,
-      "accuracyPct": 60.0,
-      "precisionPct": 63.99,
-      "recallPct": 60.0,
+      "macroF1Pct": 84.49,
+      "accuracyPct": 86.5,
+      "precisionPct": 92.55,
+      "recallPct": 87.8,
       "featuresCount": 32
     },
     "afterSelection": {
-      "macroF1Pct": 55.46,
-      "accuracyPct": 58.5,
-      "precisionPct": 55.32,
-      "recallPct": 58.5,
+      "macroF1Pct": 84.49,
+      "accuracyPct": 86.5,
+      "precisionPct": 92.55,
+      "recallPct": 87.8,
       "featuresCount": 13
     },
     "verifiedRicePilot": {
-      "macroF1Pct": 71.3,
-      "accuracyPct": 63.75,
+      "macroF1Pct": 93.31,
+      "accuracyPct": 93.06,
       "supportedDiseases": [
         "Rice Blast (Magnaporthe oryzae)",
         "Bacterial Leaf Blight (Xanthomonas oryzae)",
         "Brown Spot (Bipolaris oryzae)",
         "Healthy Rice Foliage"
       ],
-      "heldOutTestSamples": 78
+      "heldOutTestSamples": 72
     }
   }
 }

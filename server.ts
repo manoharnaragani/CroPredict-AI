@@ -3,215 +3,108 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import {
+  handlePredictYield,
+  handleDetectDisease,
+  handleModelStatus,
+  handleSmartOptimization,
+} from './src/server/predictionHandlers.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
+export const app = express();
 const PORT = 3000;
 
-app.use(express.json({ limit: '25mb' }));
-app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+// Middleware
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Load trained artifacts
-const yieldMetadataPath = path.join(__dirname, 'src/models/yield/model_metadata.json');
-const yieldWeightsPath = path.join(__dirname, 'src/models/yield/yield_model_weights.json');
-const yieldPsoPath = path.join(__dirname, 'src/models/yield/pso_yield_features.json');
-const yieldScalerPath = path.join(__dirname, 'src/models/yield/scaler_params.json');
-
-const diseaseMetadataPath = path.join(__dirname, 'src/models/disease/model_metadata.json');
-const diseaseWeightsPath = path.join(__dirname, 'src/models/disease/disease_model_weights.json');
-const diseasePsoPath = path.join(__dirname, 'src/models/disease/pso_disease_features.json');
-const diseaseLabelsPath = path.join(__dirname, 'src/models/disease/disease_labels.json');
-
-const smartOptPath = path.join(__dirname, 'src/models/optimization/smart_optimization_results.json');
+// CORS & Preflight handling for all /api routes
+app.use('/api', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 // --- API Endpoints ---
 
 // 1. Model Status & Diagnostics
 app.get('/api/models/status', (_req, res) => {
-  const yieldExists = fs.existsSync(yieldMetadataPath) && fs.existsSync(yieldWeightsPath);
-  const diseaseExists = fs.existsSync(diseaseMetadataPath) && fs.existsSync(diseaseWeightsPath);
-
-  res.json({
-    status: 'online',
-    pipeline: 'CNN-BiGRU + PSO-NSPSO',
-    models: {
-      yield: {
-        isConnected: yieldExists,
-        modelName: 'CNN-BiGRU + PSO-NSPSO Crop Yield Regressor',
-        endpoint: '/api/predict/yield',
-        targetUnit: 'tonnes/hectare',
-      },
-      disease: {
-        isConnected: diseaseExists,
-        modelName: 'CNN-BiGRU + PSO-NSPSO Foliar Disease Classifier',
-        endpoint: '/api/detect/disease',
-        targetUnit: 'macro-F1',
-      },
-    },
-  });
+  try {
+    const status = handleModelStatus();
+    res.json(status);
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Failed to retrieve model status' });
+  }
 });
 
-// 2. Smart Optimization Results
+// 2. Smart Optimization Results (Pareto frontier & feature selection)
 app.get('/api/smart-optimization', (_req, res) => {
-  if (fs.existsSync(smartOptPath)) {
-    const raw = fs.readFileSync(smartOptPath, 'utf-8');
-    return res.json(JSON.parse(raw));
+  try {
+    const data = handleSmartOptimization();
+    res.json(data);
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Failed to retrieve optimization data' });
   }
-  res.status(404).json({ error: 'Smart optimization results not found' });
 });
 
 // 3. Crop Yield Prediction Endpoint (CNN-BiGRU + PSO-NSPSO)
+// Supports both POST (full inputs) and GET (quick test / schema)
 app.post('/api/predict/yield', (req, res) => {
   try {
-    const body = req.body || {};
-    const inputs = body.inputs || body;
-    const {
-      crop = 'Rice (Paddy)',
-      region = 'Karnataka',
-      season = 'Kharif',
-      soil_pH = 6.8,
-      soil_N = 340,
-      soil_P = 18,
-      soil_K = 210,
-      avg_temperature = 28.0,
-      rainfall_mm = 650,
-      ndvi = 0.68,
-      soil_moisture_pct = 32.0,
-      irrigation_index = 0.70,
-    } = inputs;
+    const result = handlePredictYield(req.body);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Yield prediction failed' });
+  }
+});
 
-    // Base yields by crop
-    const BASE_YIELDS: Record<string, number> = {
-      'Rice (Paddy)': 4.10,
-      'Wheat': 4.45,
-      'Sugarcane': 84.50,
-      'Cotton': 1.85,
-      'Maize': 4.30,
-      'Soybean': 1.75,
-      'Ragi (Finger Millet)': 2.35,
-      'Bengal Gram (Chickpea)': 1.15,
-      'Groundnut': 2.10,
-      'Mustard': 1.45,
-      'Tur (Arhar/Pigeon Pea)': 1.05,
-      'Jowar (Sorghum)': 1.60,
-    };
-
-    const base = BASE_YIELDS[crop] || 3.5;
-
-    // Load PSO selected features
-    let selectedFeatures = [
-      'soil_N',
-      'soil_P',
-      'soil_K',
-      'soil_moisture_pct',
-      'avg_temperature',
-      'season_rainfall_mm',
-      'sentinel2_ndvi',
-      'irrigation_index',
-      'fertilizer_intensity_kg_ha',
-      'historical_3yr_trend',
-    ];
-
-    if (fs.existsSync(yieldPsoPath)) {
-      try {
-        const psoData = JSON.parse(fs.readFileSync(yieldPsoPath, 'utf-8'));
-        if (psoData.selectedFeatures) selectedFeatures = psoData.selectedFeatures;
-      } catch {
-        // use fallback
-      }
-    }
-
-    const farmAreaAcres = Number(inputs.farm_area_acres ?? inputs.farmAreaAcres ?? 2.5);
-
-    // Agronomic biological response multiplier (CNN-BiGRU calibrated)
-    const nFactor = (Number(soil_N) - 300) / 150;
-    const pFactor = (Number(soil_P) - 18) / 20;
-    const kFactor = (Number(soil_K) - 200) / 120;
-    const ndviFactor = (Number(ndvi) - 0.55) / 0.25;
-    const rainFactor = Math.sin((Number(rainfall_mm) / 1000) * Math.PI) * 0.15;
-    const irrigFactor = (Number(irrigation_index) - 0.5) * 0.12;
-    const phFactor = -Math.abs(Number(soil_pH) - 6.8) * 0.08;
-
-    const multiplier = Math.max(0.60, Math.min(1.45, 1.0 + 0.12 * nFactor + 0.08 * pFactor + 0.06 * kFactor + 0.14 * ndviFactor + rainFactor + irrigFactor + phFactor));
-    const predictedYield = Math.round(base * multiplier * 100) / 100;
-    const lowerCi = Math.round(predictedYield * 0.94 * 100) / 100;
-    const upperCi = Math.round(predictedYield * 1.06 * 100) / 100;
-
-    // Total farm production in tonnes: t/ha × acres × 0.404686
-    const totalProductionTonnes = Math.round(predictedYield * farmAreaAcres * 0.404686 * 100) / 100;
-    const totalLowerCi = Math.round(lowerCi * farmAreaAcres * 0.404686 * 100) / 100;
-    const totalUpperCi = Math.round(upperCi * farmAreaAcres * 0.404686 * 100) / 100;
-    const yieldKgPerHa = Math.round(predictedYield * 1000);
-
-    const acreageValidationNote =
-      farmAreaAcres > 54
-        ? 'Operational holding exceeds the 54-acre statutory limit under Indian Land Ceiling Acts and the Agricultural Census for single-ownership non-irrigated dry holdings. Production estimates are calculated proportionally for commercial/collective holdings.'
-        : undefined;
-
-    res.json({
-      predictedYieldTonnesPerHa: predictedYield,
-      confidenceInterval: [lowerCi, upperCi],
-      crop,
-      region,
-      season,
-      selectedFeatures,
-      cnnBigruLatentDim: 24,
-      psoOptimalFitness: 0.942,
-      timestamp: new Date().toLocaleTimeString(),
-      farmAreaAcres,
-      totalProductionTonnes,
-      totalProductionConfidenceInterval: [totalLowerCi, totalUpperCi],
-      yieldKgPerHa,
-      acreageValidationNote,
+app.get('/api/predict/yield', (req, res) => {
+  try {
+    // Allows query params or returns calibrated reference test prediction
+    const queryInputs = Object.keys(req.query).length > 0 ? req.query : undefined;
+    const result = handlePredictYield(queryInputs || {
+      crop: 'Rice (Paddy)',
+      region: 'Punjab',
+      season: 'Kharif',
+      soil_N: 380,
+      soil_P: 22,
+      soil_K: 210,
+      soil_pH: 7.2,
+      avg_temperature: 28.5,
+      rainfall_mm: 650,
+      ndvi: 0.72,
+      farm_area_acres: 2.5,
     });
+    res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: err?.message || 'Yield prediction failed' });
   }
 });
 
 // 4. Foliar Disease Detection Endpoint (CNN-BiGRU + PSO-NSPSO)
-app.post('/api/detect/disease', async (req, res) => {
+// Supports both POST (image/pixels) and GET (quick test / schema)
+app.post('/api/detect/disease', (req, res) => {
   try {
-    const { crop = 'Rice (Paddy)', pixelFeatures = null } = req.body || {};
+    const result = handleDetectDisease(req.body);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Disease detection failed' });
+  }
+});
 
-    const { classifyLeafFromBiomarkers } = await import('./src/utils/imageAnalysis.ts');
-
-    const defaultFeatures = {
-      isFoliarLeaf: true,
-      vegetativeRatio: 0.65,
-      meanHue: 0.33,
-      meanSaturation: 0.75,
-      meanValue: 0.68,
-      greenChlorophyllRatio: 1.85,
-      brownNecrosisRatio: 0.01,
-      yellowChlorosisRatio: 0.02,
-      glcmContrast: 0.22,
-      lesionCountPerCm2: 0,
-      meanLesionEccentricity: 0.3,
-      waterSoakedMarginScore: 0.05,
-      exgVegetationIndex: 0.52,
-      veinThickeningIndex: 0.02,
-      leafEdgeCurlAngle: 4.0,
-      concentricRingScore: 0.05,
-    };
-
-    const outcome = classifyLeafFromBiomarkers(pixelFeatures || defaultFeatures, crop);
-
-    res.json({
-      diseaseName: outcome.diseaseName,
-      cropName: outcome.cropName,
-      confidenceScore: outcome.confidenceScore,
-      severity: outcome.severity,
-      psoSelectedFeatures: outcome.psoSelectedFeatures,
-      recommendedAction: outcome.recommendation,
-      isFoliarLeaf: outcome.isFoliarLeaf,
-      isUncertain: outcome.isUncertain,
-      verifiedPilot: outcome.verifiedPilot,
-      pixelAnalysisSummary: outcome.pixelAnalysisSummary,
-      timestamp: new Date().toLocaleTimeString(),
-    });
+app.get('/api/detect/disease', (req, res) => {
+  try {
+    const query = req.query || {};
+    const crop = typeof query.crop === 'string' ? query.crop : 'Rice (Paddy)';
+    const sampleId = typeof query.sampleId === 'string' ? query.sampleId : 'rice-blast';
+    const result = handleDetectDisease({ crop, sampleId });
+    res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: err?.message || 'Disease detection failed' });
   }
@@ -237,4 +130,9 @@ async function startServer() {
   });
 }
 
-startServer();
+// Only auto-listen if run as main script (allows serverless import)
+if (process.env.VERCEL !== '1') {
+  startServer();
+}
+
+export default app;

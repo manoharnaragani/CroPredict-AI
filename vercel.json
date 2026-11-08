@@ -1,7 +1,26 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "vite",
   "rewrites": [
+    {
+      "source": "/api/predict/yield",
+      "destination": "/api/predict/yield"
+    },
+    {
+      "source": "/api/detect/disease",
+      "destination": "/api/detect/disease"
+    },
+    {
+      "source": "/api/models/status",
+      "destination": "/api/models/status"
+    },
+    {
+      "source": "/api/smart-optimization",
+      "destination": "/api/smart-optimization"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index"
+    },
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"

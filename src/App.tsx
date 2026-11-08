@@ -187,7 +187,7 @@ export default function App() {
     }
   }, [loadWeather]);
 
-  // High-Accuracy GPS Geolocation handler: requests browser GPS and updates Weather & Overview together
+  // High-Accuracy GPS Geolocation handler: requests browser GPS with phone network fallback
   const handleUseCurrentLocation = useCallback(() => {
     if (typeof window === 'undefined' || !('geolocation' in navigator)) {
       setGeoError('Geolocation is not supported by your browser environment.');
@@ -197,50 +197,67 @@ export default function App() {
     setGeoLocating(true);
     setGeoError(null);
 
-    navigator.geolocation.getCurrentPosition(
-      async position => {
-        const { latitude, longitude, accuracy } = position.coords;
-        try {
-          const geo = await reverseGeocodeLocation(latitude, longitude);
-          const name = geo ? geo.formattedName : `Field Location (${latitude.toFixed(3)}°, ${longitude.toFixed(3)}°)`;
-          setCurrentCoords({ lat: latitude, lon: longitude, name });
+    const onLocationSuccess = async (position: GeolocationPosition) => {
+      const { latitude, longitude, accuracy } = position.coords;
+      try {
+        const geo = await reverseGeocodeLocation(latitude, longitude);
+        const name = geo ? geo.formattedName : `Field Location (${latitude.toFixed(3)}°, ${longitude.toFixed(3)}°)`;
+        setCurrentCoords({ lat: latitude, lon: longitude, name });
 
-          const data = await fetchLiveWeather(latitude, longitude, name, {
-            village: geo?.village,
-            town: geo?.town,
-            subdistrict: geo?.subdistrict,
-            district: geo?.district,
-            state: geo?.state,
-            country: geo?.country,
-            accuracyMeters: accuracy,
-            latitude,
-            longitude,
-            source: 'gps',
-            resolvedName: name,
-          });
-          setWeather(data);
-          setWeatherError(null);
-        } catch (err: any) {
-          setGeoError(err?.message || 'Failed to fetch weather for GPS coordinates.');
-        } finally {
-          setGeoLocating(false);
-          setWeatherLoading(false);
-        }
-      },
-      error => {
+        const data = await fetchLiveWeather(latitude, longitude, name, {
+          village: geo?.village,
+          town: geo?.town,
+          subdistrict: geo?.subdistrict,
+          district: geo?.district,
+          state: geo?.state,
+          country: geo?.country,
+          accuracyMeters: accuracy,
+          latitude,
+          longitude,
+          source: 'gps',
+          resolvedName: name,
+        });
+        setWeather(data);
+        setWeatherError(null);
+      } catch (err: any) {
+        setGeoError(err?.message || 'Failed to fetch weather for GPS coordinates.');
+      } finally {
         setGeoLocating(false);
-        if (error.code === error.PERMISSION_DENIED) {
-          setGeoError('Location permission denied. Please allow location access in your browser or search manually.');
-        } else if (error.code === error.TIMEOUT) {
-          setGeoError('Location request timed out. Please retry or search your village manually.');
+        setWeatherLoading(false);
+      }
+    };
+
+    // First attempt: High-accuracy satellite GPS
+    navigator.geolocation.getCurrentPosition(
+      onLocationSuccess,
+      error => {
+        // If satellite lock times out or is unavailable (common on mobile phones indoors), fallback to network/cell triangulation
+        if (error.code === error.TIMEOUT || error.code === error.POSITION_UNAVAILABLE) {
+          navigator.geolocation.getCurrentPosition(
+            onLocationSuccess,
+            fallbackErr => {
+              setGeoLocating(false);
+              if (fallbackErr.code === fallbackErr.PERMISSION_DENIED) {
+                setGeoError('Location permission denied. Please allow location access in your phone browser.');
+              } else {
+                setGeoError('GPS signal weak. Please search your village or district manually.');
+              }
+            },
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+          );
         } else {
-          setGeoError('Unable to retrieve location. Please check GPS settings or search manually.');
+          setGeoLocating(false);
+          if (error.code === error.PERMISSION_DENIED) {
+            setGeoError('Location permission denied. Please allow location access in your phone browser.');
+          } else {
+            setGeoError('Unable to retrieve location. Please check device GPS settings or search manually.');
+          }
         }
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
+        timeout: 12000,
+        maximumAge: 60000,
       }
     );
   }, []);

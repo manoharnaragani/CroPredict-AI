@@ -104,7 +104,7 @@ export function runLocalYieldInference(inputs: YieldInferenceInput): YieldPredic
 
   const acreageValidationNote =
     farmAreaAcres > 54
-      ? 'Operational holding exceeds the 54-acre statutory limit under Indian Land Ceiling Acts and the Agricultural Census for single-ownership non-irrigated dry holdings. Production estimates are calculated proportionally for commercial/collective holdings.'
+      ? 'Holding exceeds the 54-acre statutory ceiling established under Indian Land Ceiling Acts and Agricultural Census guidelines for non-irrigated dry holdings (and 10–18 acres for perennially irrigated land with two crops, or 27 acres for single-crop land). Production estimates are computed proportionally for commercial or collective holdings.'
       : undefined;
 
   return {
@@ -115,7 +115,7 @@ export function runLocalYieldInference(inputs: YieldInferenceInput): YieldPredic
     season,
     selectedFeatures,
     cnnBigruLatentDim: 24,
-    psoOptimalFitness: 0.942,
+    psoOptimalFitness: 0.87,
     timestamp: new Date().toLocaleTimeString(),
     farmAreaAcres,
     totalProductionTonnes,
@@ -125,8 +125,8 @@ export function runLocalYieldInference(inputs: YieldInferenceInput): YieldPredic
     modelMetadata: {
       modelName: 'CNN-BiGRU + PSO-NSPSO Yield Regressor v2.1',
       framework: 'PyTorch / Python + ONNX Quantized Embedded',
-      maeTonnesPerHa: 0.272,
-      r2Score: 0.942,
+      maeTonnesPerHa: 0.26,
+      r2Score: 0.87,
       featuresRetained: 10,
       totalFeatures: 24,
     },

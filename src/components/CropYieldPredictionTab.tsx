@@ -352,6 +352,8 @@ export const CropYieldPredictionTab: React.FC<CropYieldPredictionTabProps> = ({
                   step="0.1"
                   min="4.0"
                   max="9.5"
+                  value={soilPH}
+                  onChange={e => setSoilPH(parseFloat(e.target.value) || 6.8)}
                   className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:ring-2 focus:ring-emerald-500 text-stone-800 dark:text-stone-100"
                 />
               </div>
@@ -372,7 +374,7 @@ export const CropYieldPredictionTab: React.FC<CropYieldPredictionTabProps> = ({
                   <div className="relative w-28 sm:w-32">
                     <input
                       type="number"
-                      step="0.5"
+                      step="any"
                       min="0.1"
                       max="5000"
                       value={farmAreaAcres}
@@ -631,13 +633,13 @@ export const CropYieldPredictionTab: React.FC<CropYieldPredictionTabProps> = ({
               </div>
 
               {/* Statutory Acreage Warning if > 54 Acres */}
-              {(executionResult.acreageValidationNote || farmAreaAcres > 54) && (
+              {(executionResult.acreageValidationNote || (executionResult.farmAreaAcres ? executionResult.farmAreaAcres > 54 : farmAreaAcres > 54)) && (
                 <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded-lg text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div>
                     <span className="font-bold">Agricultural Land Ceiling Notice:</span>{' '}
                     {executionResult.acreageValidationNote ||
-                      'Holding exceeds the statutory 54-acre limit defined under Indian Land Ceiling Acts and the Agricultural Census for single dryland holdings. Production estimates are calculated proportionally for commercial/collective holdings.'}
+                      'Holding exceeds the 54-acre statutory ceiling established under Indian Land Ceiling Acts and Agricultural Census guidelines for non-irrigated dry holdings (and 10–18 acres for perennially irrigated land with two crops, or 27 acres for single-crop land). Production estimates are computed proportionally for commercial or collective holdings.'}
                   </div>
                 </div>
               )}

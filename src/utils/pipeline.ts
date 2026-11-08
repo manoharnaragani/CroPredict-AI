@@ -338,7 +338,7 @@ export async function executeYieldPipeline(
             acreageValidationNote:
               json.acreageValidationNote ??
               (farmAreaAcres > 54
-                ? 'Operational holding exceeds the 54-acre statutory limit under Indian Land Ceiling Acts and the Agricultural Census for single-ownership non-irrigated dry holdings. Production estimates are calculated proportionally for commercial/collective holdings.'
+                ? 'Holding exceeds the 54-acre statutory ceiling established under Indian Land Ceiling Acts and Agricultural Census guidelines for non-irrigated dry holdings (and 10–18 acres for perennially irrigated land with two crops, or 27 acres for single-crop land). Production estimates are computed proportionally for commercial or collective holdings.'
                 : undefined),
             timestamp: json.timestamp || new Date().toLocaleTimeString(),
           },
@@ -442,6 +442,8 @@ export async function executeDiseasePipeline(
       body: JSON.stringify({
         crop: cropName,
         pixelFeatures,
+        image: leafImageDataUrl,
+        imageBase64: leafImageDataUrl,
         pipeline: 'CNN-BiGRU-PSO-NSPSO',
       }),
     });
